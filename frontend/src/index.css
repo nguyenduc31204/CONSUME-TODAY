@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-gray-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100dvh;
+  }
+
+  /* Hide scrollbar on mobile for clean UX */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-memoir-300 rounded-full;
+  }
+}
+
+@layer components {
+  .memoir-card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden;
+  }
+
+  .memoir-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all;
+    @apply focus:outline-none focus:ring-2 focus:ring-memoir-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+}
