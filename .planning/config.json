@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "mode": "yolo",
+  "granularity": "coarse",
+  "parallelization": true,
+  "commit_docs": true,
+  "planning": {
+    "commit_docs": true,
+    "sub_repos": []
+  },
+  "model_profile": "balanced",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "nyquist_validation": false,
+    "auto_advance": false,
+    "_auto_chain_active": false
+  },
+  "project_path": "/home/duc/projects/Consume-V1.0.0"
+}

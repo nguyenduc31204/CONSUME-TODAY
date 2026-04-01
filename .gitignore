@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+ENV/
+.env
+.env.local
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.pnp
+.pnp.js
+dist/
+build/
+*.tsbuildinfo
+.npm
+.yarn/install-state.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+# .planning/ is tracked (commit_docs=true) — do NOT add to gitignore
+*.log
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.nyc_output/
+
+# Docker
+.dockerignore
+
+# Creds
+*.pem
+*.key
+credentials.json
+service-account.json
