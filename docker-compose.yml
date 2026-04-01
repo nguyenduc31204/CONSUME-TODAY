@@ -1,0 +1,89 @@
+services:
+  # ────────────────────────────────────────────────────────────
+  # PostgreSQL — Primary database
+  # ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: memoir_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: memoirfinance
+      POSTGRES_USER: memoir
+      POSTGRES_PASSWORD: memoir
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memoir -d memoirfinance"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ────────────────────────────────────────────────────────────
+  # Backend — FastAPI API server
+  # ────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: memoir_backend
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false  # Allow startup without .env (uses defaults)
+    environment:
+      DATABASE_URL: postgresql+asyncpg://memoir:memoir@postgres:5432/memoirfinance
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: memoirfinance
+      DB_USER: memoir
+      DB_PASSWORD: memoir
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        python -m venv /app/.venv &&
+        source /app/.venv/bin/activate &&
+        pip install -r requirements.txt &&
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # ────────────────────────────────────────────────────────────
+  # Frontend — React/Vite dev server (or production nginx)
+  # ────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: memoir_frontend
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_APP_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    # Development: Vite dev server with hot reload
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: memoir_network
