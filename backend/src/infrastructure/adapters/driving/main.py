@@ -145,8 +145,8 @@ async def health_check():
 
 # ── Include Routers ────────────────────────────────────────
 
-from src.infrastructure.adapters.driving.routes import transactions, wallets, categories
-from src.infrastructure.adapters.driving import auth
+from src.infrastructure.adapters.driving.routes import transactions, wallets, categories, images, ocr
+from src.infrastructure.adapters.driving.auth.routes import router as auth_router
 
 api_prefix = "/api/v1"
 
@@ -169,7 +169,19 @@ app.include_router(
 )
 
 app.include_router(
-    auth.router,
+    images.router,
+    prefix=api_prefix,
+    tags=["Images"],
+)
+
+app.include_router(
+    ocr.router,
+    prefix=api_prefix,
+    tags=["OCR"],
+)
+
+app.include_router(
+    auth_router,
     prefix=api_prefix,
     tags=["Auth"],
 )

@@ -25,25 +25,18 @@ class TransactionRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_user_id(
+    async def list_by_user(
         self,
         user_id: UUID,
         *,
+        wallet_id: Optional[UUID] = None,
+        category_id: Optional[UUID] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         skip: int = 0,
         limit: int = 50,
-        include_deleted: bool = False,
-    ) -> list[Transaction]:
-        """List transactions for a user (paginated)."""
-        ...
-
-    @abstractmethod
-    async def get_by_date_range(
-        self,
-        user_id: UUID,
-        start_date: datetime,
-        end_date: datetime,
-    ) -> list[Transaction]:
-        """Get transactions within a date range."""
+    ) -> tuple[list[Transaction], int]:
+        """List transactions with filters and total count."""
         ...
 
     @abstractmethod

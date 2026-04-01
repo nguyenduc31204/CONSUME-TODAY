@@ -14,12 +14,13 @@
 
 ## Sources of Truth (Priority Order)
 
-1. **`.planning/PROJECT.md`** — Project context, requirements, constraints
-2. **`Feature_Truth.md`** — Product spec (product rules: UX, flows, features)
-3. **`docs/architecture.md`** — Hexagonal + DDD architecture design
-4. **`.planning/ROADMAP.md`** — Phase execution roadmap
-5. **`.planning/REQUIREMENTS.md`** — All REQ-IDs, mapping to phases
-6. **`rule/`** — Coding conventions (7 files)
+1. **`docs/tech-stack.md`** — Tech stack, auth flow, env vars (**đọc trước tiên**)
+2. **`.planning/PROJECT.md`** — Project context, requirements, constraints
+3. **`Feature_Truth.md`** — Product spec (product rules: UX, flows, features)
+4. **`docs/architecture.md`** — Hexagonal + DDD architecture design
+5. **`.planning/ROADMAP.md`** — Phase execution roadmap
+6. **`.planning/REQUIREMENTS.md`** — All REQ-IDs, mapping to phases
+7. **`rule/`** — Coding conventions (7 files)
 
 ### Rule Files
 
@@ -42,10 +43,12 @@
 | Frontend | React 19 + TypeScript + Vite + Tailwind CSS v4 + React Query + Zustand + React Hook Form + Zod + Lucide React |
 | Backend | FastAPI + Python 3.12 + SQLAlchemy + Alembic + Pydantic + Loguru |
 | Database | PostgreSQL 16 (snake_case, UUID PK, soft delete, audit cols) |
-| Auth | Firebase Auth (Google + Apple social login) |
-| Storage | AWS S3 |
+| Auth | Google OAuth 2.0 + Custom JWT (RS256, no Firebase/Supabase) |
+| Storage | Cloudflare R2 (S3-compatible, via @aws-sdk / boto3) |
 | AI | Claude API (Anthropic) — few-shot prompting, JSON output |
 | Dev | Docker Compose, venv + requirements.txt |
+
+> Chi tiết đầy đủ: **`docs/tech-stack.md`**
 
 ---
 
@@ -65,7 +68,7 @@ src/ (backend)
 └── infrastructure/  # Adapters
     ├── adapters/
     │   ├── driving/ # FastAPI routes
-    │   └── driven/  # PostgreSQL, S3, Claude
+    │   └── driven/  # PostgreSQL, R2, Claude API
     └── shared/      # exceptions, loguru_config
 ```
 
@@ -128,11 +131,11 @@ src/ (backend)
 ### Git Commits
 
 ```
-feat: add user authentication with Firebase
+feat: add user authentication with Google OAuth
 fix: correct category assignment in OCR
 docs: update API documentation
 chore: add Alembic migration
-refactor: extract storage adapter
+refactor: extract R2 storage adapter
 test: add OCR validation tests
 ```
 
@@ -158,13 +161,14 @@ This project uses **Get Shit Done (GSD)** methodology.
 
 ## Environment Variables
 
-viz `.env.example` — Never commit `.env` files.
+viz `.env.example` + **`docs/tech-stack.md`** — Never commit `.env` files.
 
 Required:
-- `FIREBASE_*` — Firebase Auth config
-- `AWS_*` — S3 storage
-- `ANTHROPIC_API_KEY` — Claude API key
 - `DATABASE_URL` — PostgreSQL connection string
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth 2.0 (Google Cloud Console)
+- `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` — RS256 key pair for JWT signing
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` — Cloudflare R2
+- `ANTHROPIC_API_KEY` — Claude API key
 - `APP_SECRET_KEY`, `CORS_ORIGINS`
 
 ---

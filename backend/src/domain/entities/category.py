@@ -2,12 +2,9 @@
 Category Entity — Spending/activity categories.
 Each wallet owns its own set of categories (isolated per wallet).
 """
-from datetime import datetime
 from typing import Optional
-from uuid import UUID
-from dataclasses import dataclass
-
 from src.domain.entities.base import BaseEntity
+from uuid import UUID
 
 
 # ── Default Categories ──────────────────────────────────
@@ -21,32 +18,47 @@ DEFAULT_CATEGORIES = [
 ]
 
 
-@dataclass
 class Category(BaseEntity):
-    """
-    Category entity — belongs to a specific wallet.
-    Default categories auto-created on first user login.
-    """
+    """Category entity — belongs to a specific wallet."""
 
-    wallet_id: UUID
-    name: str
-    icon: str = "tag"  # Lucide icon name
-    color: str = "#9333EA"  # memoir-purple
-    emoji: str = "🏷️"  # Emoji representation
-    is_default: bool = False  # True = system default category
-    is_active: bool = True
+    def __init__(
+        self,
+        *,
+        wallet_id: UUID,
+        name: str,
+        icon: str = "tag",
+        color: str = "#9333EA",
+        emoji: str = "🏷️",
+        is_default: bool = False,
+        is_active: bool = True,
+        id: Optional[UUID] = None,
+        created_at=None,
+        updated_at=None,
+        deleted_at=None,
+    ) -> None:
+        super().__init__(
+            id=id,
+            created_at=created_at,
+            updated_at=updated_at,
+            deleted_at=deleted_at,
+        )
+        self.wallet_id = wallet_id
+        self.name = name
+        self.icon = icon
+        self.color = color
+        self.emoji = emoji
+        self.is_default = is_default
+        self.is_active = is_active
 
     # ── Business Logic ─────────────────────────────────
 
     def rename(self, name: str) -> None:
-        """Rename the category."""
         if not name or len(name.strip()) == 0:
             raise ValueError("Category name cannot be empty")
         self.name = name.strip()
         self.touch()
 
     def update_style(self, *, icon: Optional[str] = None, color: Optional[str] = None, emoji: Optional[str] = None) -> None:
-        """Update category visual style."""
         if icon is not None:
             self.icon = icon
         if color is not None:
@@ -56,7 +68,6 @@ class Category(BaseEntity):
         self.touch()
 
     def deactivate(self) -> None:
-        """Deactivate a custom category (never delete — soft delete)."""
         self.is_active = False
         self.touch()
 

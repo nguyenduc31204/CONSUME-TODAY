@@ -35,7 +35,9 @@ RUN python -m venv /app/.venv && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY --chown=memoir:memoir . .
+COPY --chown=memoir:memoir src/ ./src/
+COPY --chown=memoir:memoir alembic.ini ./
+COPY --chown=memoir:memoir migrations/ ./migrations/
 
 # Expose port
 EXPOSE 8000
@@ -45,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Default command (can be overridden in docker-compose)
-CMD [". /app/.venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["/bin/sh", "-c", ". /app/.venv/bin/activate && uvicorn src.infrastructure.adapters.driving.main:app --host 0.0.0.0 --port 8000"]

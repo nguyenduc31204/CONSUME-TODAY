@@ -10,13 +10,13 @@
 
 ### AUTH — Authentication & Onboarding
 
-- [ ] **AUTH-01**: Social Login (Google, Apple)
+- [x] **AUTH-01**: Social Login (Google, Apple)
   - User có thể đăng nhập bằng Google hoặc Apple ID
   - 1 tap để vào app — không email/password, không OTP
   - Firebase Auth
   - *Phase: 2 (Backend Core)*
 
-- [ ] **AUTH-02**: Zero Onboarding
+- [x] **AUTH-02**: Zero Onboarding
   - Sau đăng nhập → vào thẳng màn hình "Hôm nay"
   - Hệ thống tự tạo sẵn: 1 Ví cá nhân + 6 danh mục mặc định
   - Trải nghiệm "Wow" đầu tiên = Chụp ảnh
@@ -73,14 +73,14 @@
 
 ### WALL — Wallet & Categories
 
-- [ ] **WALL-01**: Personal Wallet
+- [x] **WALL-01**: Personal Wallet
   - 1 ví mặc định "Ví cá nhân", tạo sẵn khi đăng ký
   - Giao dịch tự động gán vào ví mặc định (hoặc ví hay dùng nhất)
   - Đổi ví nhanh: Trên card pop-up → chạm tên ví → chọn ví khác (1 tap)
   - Đổi ví sau: Từ màn hình chi tiết → "Chuyển sang..." → chọn ví đích
   - *Phase: 2 (Backend Core)*
 
-- [ ] **WALL-02**: Custom Categories
+- [x] **WALL-02**: Custom Categories
   - 6 danh mục mặc định: Ăn uống (F&B), Mua sắm, Di chuyển, Giải trí, Hóa đơn & Tiện ích, Sức khỏe
   - User tự tạo danh mục mới bất kỳ (ví dụ: "Nuôi mèo", "Đám cưới")
   - Mỗi ví sở hữu bộ danh mục riêng biệt — không lẫn lộn

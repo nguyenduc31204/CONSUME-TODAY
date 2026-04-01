@@ -41,19 +41,9 @@ services:
       DB_PASSWORD: memoir
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      sh -c "
-        python -m venv /app/.venv &&
-        source /app/.venv/bin/activate &&
-        pip install -r requirements.txt &&
-        alembic upgrade head &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-      "
 
   # ────────────────────────────────────────────────────────────
   # Frontend — React/Vite dev server (or production nginx)
@@ -80,8 +70,27 @@ services:
     # Development: Vite dev server with hot reload
     command: npm run dev -- --host 0.0.0.0
 
+  # ────────────────────────────────────────────────────────────
+  # pgAdmin — PostgreSQL web management interface
+  # ────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: memoir_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@memoir.pg
+      PGADMIN_DEFAULT_PASSWORD: memoir
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   postgres_data:
+    driver: local
+  pgadmin_data:
     driver: local
 
 networks:

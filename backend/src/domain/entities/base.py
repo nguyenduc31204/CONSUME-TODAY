@@ -1,7 +1,7 @@
 """
 BaseEntity — Abstract base for all domain entities.
 Provides UUID primary key + audit columns (created_at, updated_at, deleted_at).
-Framework-agnostic: uses only stdlib datetime and uuid.
+NOT a dataclass — subclasses use dataclass WITHOUT inheriting from dataclass-generated __init__.
 """
 from datetime import datetime
 from typing import Optional
@@ -11,13 +11,13 @@ from uuid import UUID, uuid4
 class BaseEntity:
     """
     Abstract base class for all domain entities.
-    All concrete entities must inherit from this and call super().__init__().
+    Subclasses MUST define their own __init__ that calls super().__init__(**base_kwargs).
     """
 
     id: UUID
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime] = None
+    deleted_at: Optional[datetime]
 
     def __init__(
         self,
@@ -33,21 +33,17 @@ class BaseEntity:
         self.deleted_at = deleted_at
 
     def soft_delete(self) -> None:
-        """Mark entity as deleted (soft delete) without removing data."""
         self.deleted_at = datetime.utcnow()
         self.touch()
 
     def restore(self) -> None:
-        """Restore a soft-deleted entity."""
         self.deleted_at = None
         self.touch()
 
     def touch(self) -> None:
-        """Update the updated_at timestamp."""
         self.updated_at = datetime.utcnow()
 
     def is_deleted(self) -> bool:
-        """Check if entity has been soft-deleted."""
         return self.deleted_at is not None
 
     def __eq__(self, other: object) -> bool:

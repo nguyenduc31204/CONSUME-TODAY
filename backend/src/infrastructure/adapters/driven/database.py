@@ -38,6 +38,8 @@ class UserModel(Base):
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     google_sub: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     apple_sub: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -45,6 +47,7 @@ class UserModel(Base):
 
     # Relationships
     wallets: Mapped[list["WalletModel"]] = relationship("WalletModel", back_populates="user", lazy="selectin")
+    images: Mapped[list["ImageModel"]] = relationship("ImageModel", back_populates="user", lazy="selectin")
 
 
 class WalletModel(Base):
@@ -107,6 +110,7 @@ class TransactionModel(Base):
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ocr_confidence: Mapped[float] = mapped_column(default=0.0)
     is_life_log: Mapped[bool] = mapped_column(Boolean, default=False)
+    transaction_status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -121,6 +125,28 @@ class TransactionModel(Base):
         Index("ix_transactions_user_date", "user_id", "transaction_date"),
         Index("ix_transactions_user_wallet", "user_id", "wallet_id"),
     )
+
+
+class ImageModel(Base):
+    """ORM model for Image entity."""
+    __tablename__ = "images"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    width: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    height: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    storage_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Relationships
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="images")
 
 
 # ── Database Engine & Session ────────────────────────────────
