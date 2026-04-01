@@ -5,7 +5,7 @@
 See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 **Core value:** "Lưu giữ khoảnh khắc bằng hình ảnh, AI sẽ lo phần con số."
-**Current focus:** Phase 3: AI OCR + Life Log — ✅ COMPLETE
+**Current focus:** Phase 4: Frontend Core — ✅ COMPLETE
 
 ---
 
@@ -16,7 +16,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 | 1. Nền tảng | ✅ Complete | 4/4 | 2026-04-01 |
 | 2. Backend Core | ✅ Complete | 4/4 | 2026-04-01 |
 | 3. AI OCR + Life Log | ✅ Complete | 3/3 | 2026-04-01 |
-| 4. Frontend Core | ⏳ Not started | — | — |
+| 4. Frontend Core | ✅ Complete | 3/3 | 2026-04-01 |
 | 5. Nhìn lại + Polish | ⏳ Not started | — | — |
 
 ---
@@ -75,7 +75,52 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 ---
 
-## Verification Results (Phase 3)
+## Phase 4 Execution Log
+
+| Plan | Status | Notes |
+|------|--------|-------|
+| 04-01 | ✅ Done | uploadStore (Zustand state machine) + CardPopup (countdown bar, QuickEdit form) + useUpload hook + BottomNav camera FAB (file input → memoir:upload event) + AppShell (event listener + CardPopup overlay) + ApiClient reads token from authStore |
+| 04-02 | ✅ Done | PhotoCard (full + compact mode, image + overlay + badges) + Home page (React Query today filter, empty state, feed) |
+| 04-03 | ✅ Done | Journal calendar view (month grid with photo thumbnails, +N badge, today highlight) + DayPopup (list all transactions for a day) + Grid view (3-col masonry with amount overlay) |
+
+---
+
+## Verification Results (Phase 4)
+
+```
+Frontend: tsc --noEmit                              ✅ 0 TypeScript errors
+Frontend: npm run build                              ✅ 326KB JS, 30KB CSS
+Backend: pytest tests/unit/                          ✅ 27/27 passed
+Frontend: CardPopup — countdown bar + auto-save      ✅
+Frontend: BottomNav camera FAB → memoir:upload evt  ✅
+Frontend: Home feed (React Query, today filter)      ✅
+Frontend: Journal calendar (grouped by date)         ✅
+Frontend: Journal grid (3-col, compact PhotoCard)    ✅
+```
+
+---
+
+## Frontend Feature Summary (Phase 4)
+
+### Camera Flow
+- BottomNav FAB → file input → `memoir:upload` custom event
+- AppShell listens → `useUpload()` → React Query mutation
+- Backend: `POST /transactions/upload` → `{ transaction_id, ocr_result, auto_save_in_seconds: 3 }`
+- CardPopup: shows preview + countdown bar + QuickEdit
+- 3s countdown → auto-call `POST /transactions/{id}/confirm`
+
+### Home Feed ("Hôm Nay")
+- React Query: `GET /transactions?start_date=today&end_date=today`
+- PhotoCard: image + amount overlay + merchant + category + time + badges
+- Empty state with camera CTA
+
+### Journal
+- Calendar: month grid, photo thumbnails per day cell, "+N" badge, today highlight
+- DayPopup: click day → list all transactions with details
+- Grid: 3-column masonry, compact PhotoCard with amount overlay
+- Toggle Calendar ↔ Grid (already scaffolded, now wired to data)
+
+
 
 ```
 Backend: python -c "from src.main import app"          ✅ App loads OK

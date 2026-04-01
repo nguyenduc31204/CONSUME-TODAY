@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import { useAuthStore } from '@/stores/authStore'
 import { useUiStore } from '@/stores/uiStore'
-import { apiClient } from '@/api/client'
 
 /** Hook: Authentication actions */
 export function useAuth() {
@@ -26,7 +25,6 @@ export function useAuth() {
 
   const logout = useCallback(() => {
     clearAuth()
-    apiClient.setAuthToken(null)
     addToast('Đã đăng xuất', 'info')
   }, [clearAuth, addToast])
 

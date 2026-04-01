@@ -37,10 +37,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'memoir-auth',
-      // Only persist user, not tokens (tokens go in memory)
+      // Persist user + token so ApiClient can read token on page reload
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken,
       }),
     },
   ),

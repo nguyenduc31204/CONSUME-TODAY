@@ -2,7 +2,7 @@ import { HTMLAttributes } from 'react'
 import { cn } from '@/utils/cn'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'category' | 'life-log' | 'success' | 'error'
+  variant?: 'default' | 'category' | 'life-log' | 'success' | 'error' | 'warning'
   size?: 'sm' | 'md'
   color?: string // Hex color for category badges
 }
@@ -30,6 +30,7 @@ export function Badge({
           'life-log': 'bg-memoir-50 text-memoir-500 border border-memoir-200',
           success: 'bg-green-50 text-green-700',
           error: 'bg-red-50 text-red-600',
+          warning: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
         }[variant],
         className,
       )}

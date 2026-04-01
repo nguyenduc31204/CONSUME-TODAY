@@ -12,6 +12,7 @@ export interface Transaction {
   note: string | null
   ocr_confidence: number
   is_life_log: boolean
+  transaction_status: string
   created_at: string
   updated_at: string
 }

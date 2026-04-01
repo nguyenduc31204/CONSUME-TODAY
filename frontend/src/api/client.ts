@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/authStore'
 import type { ApiResponse } from '@/types/api'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
@@ -5,18 +6,17 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api
 /**
  * Generic fetch-based API client.
  * All methods return the standard { success, data, message } envelope.
- * Automatically handles JSON headers and authorization.
+ * Automatically reads auth token from authStore on every request.
  */
 export class ApiClient {
   private baseUrl: string
-  private authToken: string | null = null
 
   constructor(baseUrl: string = BASE_URL) {
     this.baseUrl = baseUrl
   }
 
-  setAuthToken(token: string | null) {
-    this.authToken = token
+  private _getToken(): string | null {
+    return useAuthStore.getState().accessToken
   }
 
   private async request<T>(
@@ -25,14 +25,15 @@ export class ApiClient {
     options: RequestInit = {},
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${path}`
+    const token = this._getToken()
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> | undefined),
     }
 
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
     }
 
     try {
@@ -45,7 +46,6 @@ export class ApiClient {
       const data: ApiResponse<T> = await response.json()
       return data
     } catch (err) {
-      // Network error
       return {
         success: false,
         data: null,
@@ -93,6 +93,7 @@ export class ApiClient {
     additionalFields?: Record<string, string>,
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${path}`
+    const token = this._getToken()
     const formData = new FormData()
     formData.append('file', file)
 
@@ -103,8 +104,8 @@ export class ApiClient {
     }
 
     const headers: Record<string, string> = {}
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
     }
 
     try {

@@ -37,15 +37,13 @@ export function useUploadTransaction() {
 
   return useMutation({
     mutationFn: async ({ file, walletId }: { file: File; walletId?: string }) => {
-      return transactionsApi.uploadImage(file, walletId)
+      const response = await transactionsApi.upload(file, walletId)
+      if (!response.success) throw new Error(response.message)
+      return response.data
     },
-    onSuccess: (response) => {
-      if (response.success) {
-        addToast('Giao dịch đã được lưu!', 'success')
-        queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      } else {
-        addToast(response.message || 'Upload thất bại', 'error')
-      }
+    onSuccess: () => {
+      addToast('Giao dịch đã được lưu!', 'success')
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
     },
     onError: (err: Error) => {
       addToast(err.message, 'error')

@@ -2,6 +2,7 @@ import { apiClient } from './client'
 import type { ApiResponse } from '@/types/api'
 import type { Transaction, TransactionListParams, TransactionUpdateData } from '@/types/transaction'
 import type { PaginatedData } from '@/types/api'
+import type { UploadTransactionResponse, TransactionEditResponse } from '@/types/upload'
 
 export const transactionsApi = {
   /** List transactions with optional filters */
@@ -14,14 +15,39 @@ export const transactionsApi = {
     return apiClient.get(`/transactions/${id}`)
   },
 
-  /** Upload image → AI OCR → auto-save transaction */
-  async uploadImage(file: File, walletId?: string): Promise<ApiResponse<Transaction>> {
-    return apiClient.upload('/transactions/upload', file, walletId ? { wallet_id: walletId } : undefined)
+  /** Upload image → AI OCR → create pending transaction */
+  async upload(
+    file: File,
+    walletId?: string,
+  ): Promise<ApiResponse<UploadTransactionResponse>> {
+    return apiClient.upload<UploadTransactionResponse>(
+      '/transactions/upload',
+      file,
+      walletId ? { wallet_id: walletId } : undefined,
+    )
+  },
+
+  /** Confirm a pending transaction (auto-save after countdown) */
+  async confirm(id: string): Promise<ApiResponse<Transaction>> {
+    return apiClient.post<Transaction>(`/transactions/${id}/confirm`)
+  },
+
+  /** Get transaction data + available wallets + categories for Quick Edit */
+  async getForEdit(id: string): Promise<ApiResponse<TransactionEditResponse>> {
+    return apiClient.get<TransactionEditResponse>(`/transactions/${id}/edit`)
+  },
+
+  /** Convert a life-log entry to a financial expense */
+  async convertToExpense(
+    id: string,
+    data: { amount: number; category_id: string; merchant_name?: string },
+  ): Promise<ApiResponse<Transaction>> {
+    return apiClient.post<Transaction>(`/transactions/${id}/convert-to-expense`, data)
   },
 
   /** Update a transaction (human-in-the-loop edit) */
   async update(id: string, data: TransactionUpdateData): Promise<ApiResponse<Transaction>> {
-    return apiClient.patch(`/transactions/${id}`, data)
+    return apiClient.patch<Transaction>(`/transactions/${id}`, data)
   },
 
   /** Soft-delete a transaction */

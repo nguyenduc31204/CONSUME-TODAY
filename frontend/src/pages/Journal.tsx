@@ -1,39 +1,235 @@
-import { useState } from 'react'
-import { Calendar, Grid3X3, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Calendar, Grid3X3, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import { transactionsApi } from '@/api/transactions'
+import { formatVND } from '@/utils/formatters'
+import { PhotoCard } from '@/components/common/PhotoCard'
+import { Spinner } from '@/components/ui/Spinner'
+import type { Transaction } from '@/types/transaction'
 
 type ViewMode = 'calendar' | 'grid'
 
-/**
- * Journal — "Nhật ký" Screen
- *
- * Two views:
- * - Calendar: month grid with 1 photo/day cell, "+N" badge
- * - Grid: Instagram-style photo gallery with amount overlay
- * Toggle between views via button at top.
- */
+// ── Helpers ────────────────────────────────────────────────────
+
+function getMonthRange(year: number, month: number): { start: string; end: string } {
+  const start = `${year}-${String(month + 1).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const end = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  return { start, end }
+}
+
+function groupByDate(transactions: Transaction[]): Record<string, Transaction[]> {
+  const groups: Record<string, Transaction[]> = {}
+  for (const t of transactions) {
+    const dateStr = t.transaction_date
+      ? new Date(t.transaction_date).toISOString().split('T')[0]
+      : new Date(t.created_at).toISOString().split('T')[0]
+    if (!groups[dateStr]) groups[dateStr] = []
+    groups[dateStr].push(t)
+  }
+  return groups
+}
+
+// ── Calendar Day Cell ───────────────────────────────────────────
+
+interface CalendarDayProps {
+  day: number | null
+  dateKey: string | null  // YYYY-MM-DD
+  isToday: boolean
+  transactions: Transaction[]
+  onClick: (dateKey: string, txns: Transaction[]) => void
+}
+
+function CalendarDay({ day, dateKey, isToday, transactions, onClick }: CalendarDayProps) {
+  if (day === null) return <div className="aspect-square" />
+
+  const hasPhotos = transactions.length > 0
+  const photoCount = transactions.length
+  const coverPhoto = transactions[0]?.thumbnail_url ?? transactions[0]?.image_url ?? null
+
+  return (
+    <button
+      onClick={() => dateKey && onClick(dateKey, transactions)}
+      disabled={!dateKey}
+      className={cn(
+        'group relative aspect-square overflow-hidden rounded-xl transition-all',
+        'hover:ring-2 hover:ring-memoir-300',
+        'focus:outline-none focus:ring-2 focus:ring-memoir-500',
+        'disabled:cursor-default disabled:hover:ring-0',
+        isToday ? 'bg-memoir-50 ring-1 ring-memoir-200' : 'bg-white',
+        hasPhotos ? 'shadow-sm' : '',
+      )}
+    >
+      <span
+        className={cn(
+          'absolute inset-0 z-10 flex items-center justify-center text-sm',
+          isToday ? 'font-bold text-memoir-600' : 'text-gray-700',
+        )}
+      >
+        {day}
+      </span>
+
+      {/* Photo thumbnail */}
+      {hasPhotos && coverPhoto && (
+        // eslint-disable-next-line jsx-a11y/img-redundant-alt
+        <img
+          src={coverPhoto}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover opacity-60"
+        />
+      )}
+
+      {/* Bottom gradient + amount */}
+      {hasPhotos && !coverPhoto && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/40 to-transparent h-1/2" />
+      )}
+
+      {/* "+N" badge */}
+      {photoCount > 1 && (
+        <span className="absolute right-0.5 top-0.5 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-memoir-500 px-1 text-[10px] font-bold text-white shadow-sm">
+          +{photoCount}
+        </span>
+      )}
+    </button>
+  )
+}
+
+// ── Day Popup ──────────────────────────────────────────────────
+
+interface DayPopupProps {
+  dateKey: string
+  transactions: Transaction[]
+  onClose: () => void
+  onSelect: (t: Transaction) => void
+}
+
+function DayPopup({ dateKey, transactions, onClose, onSelect }: DayPopupProps) {
+  const dateLabel = new Date(dateKey + 'T12:00:00').toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col animate-in slide-in-from-bottom-4 fade-in duration-300">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900 capitalize">{dateLabel}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{transactions.length} kỷ niệm</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 hover:bg-gray-100 transition-colors"
+            aria-label="Đóng"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Photos */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          {transactions.map((t) => (
+            <div key={t.id} className="flex gap-3">
+              {t.thumbnail_url && (
+                // eslint-disable-next-line jsx-a11y/img-redundant-alt
+                <img
+                  src={t.thumbnail_url}
+                  alt={t.merchant_name ?? 'Kỷ niệm'}
+                  className="h-16 w-16 flex-shrink-0 rounded-xl object-cover"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {t.merchant_name || (t.is_life_log ? 'Kỷ niệm' : 'Giao dịch')}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {t.is_life_log ? 'Life Log' : formatVND(t.amount)}
+                </p>
+              </div>
+              <button
+                onClick={() => onSelect(t)}
+                className="self-center rounded-full px-3 py-1 text-xs font-medium bg-memoir-50 text-memoir-600 hover:bg-memoir-100 transition-colors"
+              >
+                Chi tiết
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Journal Page ───────────────────────────────────────────────
+
 export default function Journal() {
   const [viewMode, setViewMode] = useState<ViewMode>('calendar')
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState(() => new Date())
+  const [popup, setPopup] = useState<{ dateKey: string; txns: Transaction[] } | null>(null)
 
-  // Generate calendar days for current month
   const year = currentMonth.getFullYear()
   const month = currentMonth.getMonth()
+  const { start: startDate, end: endDate } = getMonthRange(year, month)
+
+  // Fetch transactions for the current month
+  const { data, isLoading } = useQuery({
+    queryKey: ['transactions', 'month', year, month],
+    queryFn: async () => {
+      const res = await transactionsApi.list({
+        start_date: startDate,
+        end_date: endDate,
+        limit: 500,
+      })
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+  })
+
+  const transactions: Transaction[] = data?.items ?? []
+  const byDate = useMemo(() => groupByDate(transactions), [transactions])
+
+  // Calendar grid
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
-  const startPadding = firstDay.getDay() // 0=Sun
+  const startPadding = firstDay.getDay()
   const daysInMonth = lastDay.getDate()
+  const calendarCells: { day: number | null; dateKey: string | null }[] = [
+    ...Array(startPadding).fill(null).map(() => ({ day: null, dateKey: null })),
+    ...Array.from({ length: daysInMonth }, (_, i) => {
+      const d = i + 1
+      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      return { day: d, dateKey }
+    }),
+  ]
 
   const monthName = currentMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })
+  const today = new Date()
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month
+  const todayDay = today.getDate()
 
   const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1))
   const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1))
 
-  // Generate day cells (padding + actual days)
-  const calendarCells: (number | null)[] = [
-    ...Array(startPadding).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ]
+  const handleDayClick = (dateKey: string, txns: Transaction[]) => {
+    if (txns.length === 1) {
+      // Single photo — could open detail, for now just show popup
+      setPopup({ dateKey, txns })
+    } else {
+      setPopup({ dateKey, txns })
+    }
+  }
+
+  const handleTransactionSelect = (t: Transaction) => {
+    setPopup(null)
+    // TODO: Navigate to transaction detail
+    console.log('Selected transaction:', t.id)
+  }
 
   return (
     <div className="flex flex-col">
@@ -72,7 +268,9 @@ export default function Journal() {
         </div>
       </div>
 
-      {viewMode === 'calendar' ? (
+      {isLoading ? (
+        <div className="flex justify-center py-16"><Spinner /></div>
+      ) : viewMode === 'calendar' ? (
         /* ── Calendar View ───────────────────────────── */
         <div className="flex-1 px-4 pb-4">
           {/* Month navigation */}
@@ -103,87 +301,54 @@ export default function Journal() {
 
           {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-1">
-            {calendarCells.map((day, idx) => {
-              if (!day) {
-                return <div key={`pad-${idx}`} className="aspect-square" />
-              }
-
-              const isToday =
-                day === new Date().getDate() &&
-                month === new Date().getMonth() &&
-                year === new Date().getFullYear()
-
-              // TODO Phase 4: Replace with real photos
-              const hasPhotos = false
-              const photoCount = 0
-
-              return (
-                <button
-                  key={day}
-                  className={cn(
-                    'group relative aspect-square overflow-hidden rounded-xl transition-all',
-                    'hover:ring-2 hover:ring-memoir-300',
-                    'focus:outline-none focus:ring-2 focus:ring-memoir-500',
-                    isToday ? 'bg-memoir-50 ring-1 ring-memoir-200' : 'bg-white',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'absolute inset-0 flex items-center justify-center text-sm',
-                      isToday ? 'font-bold text-memoir-600' : 'text-gray-700',
-                    )}
-                  >
-                    {day}
-                  </span>
-
-                  {/* Placeholder photo thumbnail — Phase 4 */}
-                  {hasPhotos && (
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent">
-                      <div className="h-full bg-gray-200 opacity-50" />
-                    </div>
-                  )}
-
-                  {/* "+N" badge */}
-                  {photoCount > 1 && (
-                    <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-memoir-500 px-1 text-[10px] font-bold text-white">
-                      +{photoCount}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
+            {calendarCells.map(({ day, dateKey }, idx) => (
+              <CalendarDay
+                key={idx}
+                day={day}
+                dateKey={dateKey}
+                isToday={isCurrentMonth && day === todayDay}
+                transactions={dateKey ? (byDate[dateKey] ?? []) : []}
+                onClick={handleDayClick}
+              />
+            ))}
           </div>
 
-          {/* Placeholder message */}
-          <div className="mt-8 text-center text-gray-400">
-            <p className="text-sm">Chưa có ảnh nào trong tháng này</p>
-            <p className="mt-1 text-xs">Chụp ảnh để lưu kỷ niệm!</p>
-          </div>
+          {/* Month summary */}
+          {transactions.length > 0 && (
+            <div className="mt-4 rounded-xl bg-white px-4 py-3 text-center shadow-sm">
+              <p className="text-xs text-gray-400">
+                {transactions.length} kỷ niệm trong tháng
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         /* ── Grid View ──────────────────────────────── */
         <div className="flex-1 px-4 pb-4">
-          {/* Placeholder grid — Phase 4: real photos */}
-          <div className="grid grid-cols-3 gap-1">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'aspect-square rounded-lg bg-gray-100',
-                  'flex items-center justify-center',
-                  'text-gray-300 text-2xl',
-                )}
-              >
-                📷
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 text-center text-gray-400">
-            <p className="text-sm">Ảnh của bạn sẽ hiển thị ở đây</p>
-            <p className="mt-1 text-xs">Chế độ lưới xếp ảnh theo thời gian</p>
-          </div>
+          {transactions.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <div className="text-5xl">📷</div>
+              <p className="text-sm font-medium text-gray-500">Chưa có ảnh nào</p>
+              <p className="text-xs text-gray-400">Chụp ảnh để lưu kỷ niệm!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-1">
+              {transactions.map((t) => (
+                <PhotoCard key={t.id} transaction={t} compact />
+              ))}
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Day Popup */}
+      {popup && (
+        <DayPopup
+          dateKey={popup.dateKey}
+          transactions={popup.txns}
+          onClose={() => setPopup(null)}
+          onSelect={handleTransactionSelect}
+        />
       )}
     </div>
   )
