@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/utils/cn'
 import { formatVND } from '@/utils/formatters'
+import { getProxyImageUrl } from '@/utils/imageUrl'
 import type { Transaction } from '@/types/transaction'
 
 interface HomeCardProps {
@@ -25,7 +26,7 @@ function getCategoryIcon(name: string | null | undefined) {
 
 export function HomeCard({ transaction: t, onClick, className }: HomeCardProps) {
   const navigate = useNavigate()
-  const imageUrl = t.thumbnail_url ?? t.image_url
+  const imageUrl = getProxyImageUrl(t.thumbnail_url ?? t.image_url)
   const isLifeLog = t.is_life_log || t.amount === 0
 
   const handleClick = () => {

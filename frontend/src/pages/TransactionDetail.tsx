@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Pencil, Trash2, Image as ImageIcon, DollarSign, Tag, Calendar, Wallet, AlignLeft, TrendingUp } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi } from '@/api/transactions'
+import { getProxyImageUrl } from '@/utils/imageUrl'
 import { useAuthStore } from '@/stores/authStore'
 import { useUiStore } from '@/stores/uiStore'
 import { Button } from '@/components/ui/Button'
@@ -356,7 +357,7 @@ export default function TransactionDetail() {
     )
   }
 
-  const imageUrl = transaction.image_url ?? transaction.thumbnail_url
+  const imageUrl = getProxyImageUrl(transaction.image_url ?? transaction.thumbnail_url)
 
   return (
     <div className="min-h-screen bg-cream">

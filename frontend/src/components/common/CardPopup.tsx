@@ -9,6 +9,7 @@ import { transactionsApi } from '@/api/transactions'
 import type { UploadTransactionResponse, TransactionEditResponse, WalletSummary, CategorySummary } from '@/types/upload'
 import type { TransactionUpdateData } from '@/types/transaction'
 import { Spinner } from '@/components/ui/Spinner'
+import { getProxyImageUrl } from '@/utils/imageUrl'
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -334,9 +335,9 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
   const isSaving = state.phase === 'saving'
 
   // Preview thumbnail URL from upload response or local file
-  const previewUrl = data?.image.thumbnail_url
-    ?? data?.image.url
-    ?? (file ? URL.createObjectURL(file) : null)
+  const previewUrl = getProxyImageUrl(
+    data?.image.thumbnail_url ?? data?.image.url,
+  ) ?? (file ? URL.createObjectURL(file) : null)
 
   const ocr = data?.ocr_result
 

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { transactionsApi } from '@/api/transactions'
 import { formatVND } from '@/utils/formatters'
 import { PhotoCard } from '@/components/common/PhotoCard'
+import { getProxyImageUrl } from '@/utils/imageUrl'
 import { CalendarSkeleton } from '@/components/ui/Skeleton'
 import type { Transaction } from '@/types/transaction'
 
@@ -54,7 +55,7 @@ function CalendarDay({ day, dateKey, isToday, transactions, onClick }: CalendarD
 
   const hasPhotos = transactions.length > 0
   const photoCount = transactions.length
-  const coverPhoto = transactions[0]?.thumbnail_url ?? transactions[0]?.image_url ?? null
+  const coverPhoto = getProxyImageUrl(transactions[0]?.thumbnail_url ?? transactions[0]?.image_url)
 
   return (
     <button
@@ -149,7 +150,7 @@ function DayPopup({ dateKey, transactions, onClose }: DayPopupProps) {
         <div className="flex-1 overflow-y-auto px-3 py-3">
           <div className="grid grid-cols-3 gap-1.5">
             {transactions.map((t) => {
-              const imageUrl = t.thumbnail_url ?? t.image_url
+              const imageUrl = getProxyImageUrl(t.thumbnail_url ?? t.image_url)
               const isLifeLog = t.is_life_log || t.amount === 0
 
               return (

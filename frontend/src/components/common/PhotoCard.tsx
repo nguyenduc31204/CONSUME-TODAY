@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/utils/cn'
 import { formatVND, formatRelativeTime } from '@/utils/formatters'
+import { getProxyImageUrl } from '@/utils/imageUrl'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import type { Transaction } from '@/types/transaction'
@@ -24,7 +25,7 @@ export function PhotoCard({
   className,
 }: PhotoCardProps) {
   const navigate = useNavigate()
-  const imageUrl = t.thumbnail_url ?? t.image_url
+  const imageUrl = getProxyImageUrl(t.thumbnail_url ?? t.image_url)
   const isLifeLog = t.is_life_log || t.amount === 0
 
   const handleClick = () => {
