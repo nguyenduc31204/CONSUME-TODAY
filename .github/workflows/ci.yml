@@ -194,25 +194,22 @@ jobs:
             docker pull "${NEW_IMAGE}"
 
             echo "📝 Updating docker-compose.prod.yml..."
-            # Replace 'build: ./backend' with 'image: NEW_IMAGE' using Python
-            python3 -c "
+            python3 << 'PYEOF'
 import re
-with open('docker-compose.prod.yml', 'r') as f:
+with open('/opt/CONSUME-TODAY/docker-compose.prod.yml', 'r') as f:
     content = f.read()
-# Replace build: block with image: (comment out build)
 content = re.sub(
-    r'^  backend:\n    build:\n      context: \./backend\n      dockerfile: Dockerfile',
-    '  backend:\n    image: ${NEW_IMAGE}\n    # build: ./backend (commented - managed by CI)',
+    r'^\s+build:\n\s+context: \./backend\n\s+dockerfile: Dockerfile',
+    '    image: docker.io/REPLACEME\n    # build: (commented - managed by CI)',
     content,
     flags=re.MULTILINE
 )
-with open('docker-compose.prod.yml', 'w') as f:
+with open('/opt/CONSUME-TODAY/docker-compose.prod.yml', 'w') as f:
     f.write(content)
-"
+PYEOF
+            sed -i "s|REPLACEME|${REGISTRY}/memoir-backend:${{ github.sha }}|" /opt/CONSUME-TODAY/docker-compose.prod.yml
 
             echo "🚀 Restarting backend..."
             docker compose -f docker-compose.prod.yml up -d --no-deps backend
-
-            echo "✅ Backend deployed! SHA: ${{ github.sha }}"
 
             echo "✅ Backend deployed! SHA: ${{ github.sha }}"
