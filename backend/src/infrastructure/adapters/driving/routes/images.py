@@ -1,10 +1,11 @@
 """
-Image Routes — Upload, retrieve, and delete images with R2 storage.
+Image Routes — Upload, retrieve, delete, and download images with R2 storage.
 """
 
 from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, File, Header, HTTPException, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dtos.response.image_dto import ImageResponse
@@ -150,3 +151,43 @@ async def delete_image(
             pass
 
     return {"success": True, "data": None, "message": "Image deleted."}
+
+
+@router.get("/images/{image_id}/download")
+async def download_image(
+    image_id: UUID,
+    user_id: UUID = Depends(_get_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Force-download an image with Content-Disposition: attachment.
+    Works reliably on mobile Safari/iOS where fetch+blob approach fails.
+    """
+    repo = ImageRepositoryImpl(db)
+    image = await repo.get_by_id(image_id)
+
+    if image is None:
+        raise NotFoundException(message="Image not found.")
+    if image.user_id != user_id:
+        raise ForbiddenException(message="You do not have access to this image.")
+
+    storage = R2StorageAdapter()
+    try:
+        # Fetch raw bytes from R2
+        bytes_data = await storage.get_object(image.storage_key)
+    except Exception as exc:
+        logger.error(f"Failed to fetch image {image_id} from R2: {exc}")
+        raise NotFoundException(message="Image not found in storage.")
+
+    filename = image.filename or f"memoir-{image_id}.jpg"
+    content_type = image.mime_type or "image/jpeg"
+
+    return Response(
+        content=bytes_data,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(bytes_data)),
+            "Cache-Control": "private, max-age=3600",
+        },
+    )

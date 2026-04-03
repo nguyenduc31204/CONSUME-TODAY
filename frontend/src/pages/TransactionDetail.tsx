@@ -269,19 +269,25 @@ export default function TransactionDetail() {
 
   const handleDownload = async () => {
     if (!id) return
-    const url = getProxyImageUrl(transaction?.image_url ?? transaction?.thumbnail_url ?? '')
-    if (!url) return
+    const token = useAuthStore.getState().accessToken
+    if (!token) { addToast('Vui lòng đăng nhập', 'warning'); return }
+
     try {
-      const res = await fetch(url)
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/transactions/${id}/download`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      if (!res.ok) throw new Error('Download failed')
+
       const blob = await res.blob()
-      const objectUrl = URL.createObjectURL(blob)
+      const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = objectUrl
+      a.href = url
       a.download = `memoir-${id}.jpg`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(objectUrl)
+      URL.revokeObjectURL(url)
     } catch {
       addToast('Không thể tải ảnh', 'error')
     }

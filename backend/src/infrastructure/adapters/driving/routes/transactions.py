@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Header, Query, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -729,6 +730,55 @@ async def update_transaction(
     wallets, categories = await _build_name_cache(db, user_id)
     tx_data = _enrich_tx(updated, wallets, categories)
     return {"success": True, "data": tx_data, "message": "Transaction updated."}
+
+
+@router.get("/transactions/{transaction_id}/download")
+async def download_transaction_image(
+    transaction_id: UUID,
+    user_id: UUID = Depends(_get_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Force-download the transaction image with Content-Disposition: attachment.
+    Works reliably on mobile Safari/iOS where fetch+blob approach fails.
+    """
+    repo = _get_transaction_repo(db)
+    transaction = await repo.get_by_id(transaction_id)
+
+    if transaction is None:
+        raise NotFoundException(message="Transaction not found.")
+    if transaction.user_id != user_id:
+        raise ForbiddenException(message="You do not have access to this transaction.")
+
+    if not transaction.image_url:
+        raise NotFoundException(message="No image for this transaction.")
+
+    # Extract storage key from R2 URL: https://pub-xxx.r2.dev/<key>
+    from src.config import get_settings
+    settings = get_settings()
+    r2_public = settings.r2_public_url.rstrip("/")
+    if not transaction.image_url.startswith(r2_public + "/"):
+        raise NotFoundException(message="Image URL not found in storage.")
+
+    storage_key = transaction.image_url[len(r2_public) + 1:]
+
+    storage = R2StorageAdapter()
+    try:
+        bytes_data = await storage.get_object(storage_key)
+    except Exception as exc:
+        raise NotFoundException(message="Image not found in storage.")
+
+    filename = f"memoir-{transaction_id}.jpg"
+
+    return Response(
+        content=bytes_data,
+        media_type="image/jpeg",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(bytes_data)),
+            "Cache-Control": "private, max-age=3600",
+        },
+    )
 
 
 @router.delete("/transactions/{transaction_id}")
