@@ -241,14 +241,18 @@ class R2StorageAdapter:
         original_url = f"{self.settings.r2_public_url}/{original_key}"
         thumbnail_url = f"{self.settings.r2_public_url}/{thumbnail_key}"
 
+        # Generate presigned GET URLs so frontend can access even if R2 is private
+        presigned_url = await self.get_presigned_get_url(original_key, expires_in=86400)  # 24h
+        presigned_thumb_url = await self.get_presigned_get_url(thumbnail_key, expires_in=86400)  # 24h
+
         logger.info(
-            f"Image uploaded: {original_url} ({len(preprocessed_bytes)//1024}KB, "
+            f"Image uploaded: {original_key} ({len(preprocessed_bytes)//1024}KB, "
             f"{width}x{height}); thumbnail: {thumb_w}x{thumb_h}"
         )
 
         return {
-            "url": original_url,
-            "thumbnail_url": thumbnail_url,
+            "url": presigned_url,
+            "thumbnail_url": presigned_thumb_url,
             "width": width,
             "height": height,
             "file_size": len(preprocessed_bytes),
