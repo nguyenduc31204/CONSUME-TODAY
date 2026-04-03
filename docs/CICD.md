@@ -35,7 +35,7 @@ ssh user@your-server-ip
 # Tạo/thêm public key
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
-echo "ssh-ed25519 AAAA... github-actions" >> ~/.ssh/authorized_keys
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINTxHhBUMtsv+QcrjE7Z47gsGIibDlJcil2U+/fWQz65 github-actions" >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 ```
 

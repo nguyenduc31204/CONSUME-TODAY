@@ -642,7 +642,6 @@ export default function TransactionDetail() {
             src={imageUrl}
             alt={transaction.merchant_name ?? 'Ảnh kỷ niệm'}
             className="max-h-full max-w-full object-contain"
-            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}

@@ -765,7 +765,7 @@ async def download_transaction_image(
     storage = R2StorageAdapter()
     try:
         bytes_data = await storage.get_object(storage_key)
-    except Exception as exc:
+    except Exception:
         raise NotFoundException(message="Image not found in storage.")
 
     filename = f"memoir-{transaction_id}.jpg"
