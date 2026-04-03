@@ -6,6 +6,7 @@ import { CardPopup } from '@/components/common/CardPopup'
 import { useUpload } from '@/hooks/useUpload'
 import { useAuthStore } from '@/stores/authStore'
 import { useUiStore } from '@/stores/uiStore'
+import { compressImage } from '@/utils/imageCompression'
 
 interface AppShellProps {
   children: ReactNode
@@ -23,13 +24,21 @@ export function AppShell({ children }: AppShellProps) {
 
   // Listen for camera events from BottomNav
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       if (!useAuthStore.getState().accessToken) {
         useUiStore.getState().addToast('Vui lòng đăng nhập để chụp ảnh', 'warning')
         return
       }
       const customEvent = e as CustomEvent<{ file: File }>
-      triggerUpload(customEvent.detail.file)
+
+      // Compress image before upload to avoid timeout on large mobile photos
+      try {
+        const compressed = await compressImage(customEvent.detail.file)
+        triggerUpload(compressed)
+      } catch {
+        // Fallback: upload original if compression fails
+        triggerUpload(customEvent.detail.file)
+      }
     }
     window.addEventListener('memoir:upload', handler)
     return () => window.removeEventListener('memoir:upload', handler)

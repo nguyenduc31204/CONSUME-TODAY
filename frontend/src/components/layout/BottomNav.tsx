@@ -45,12 +45,11 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Hidden file input */}
+      {/* Hidden file input — opens camera or gallery on mobile */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"
