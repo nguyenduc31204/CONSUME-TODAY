@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Camera, Image, Home, Calendar, BarChart3, User } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -15,11 +15,13 @@ const NAV_ITEMS = [
  *
  * Spec:
  * - 4 tabs: Hôm Nay | Nhật ký | Nhìn lại | Cá nhân
- * - Camera FAB: centered, large, opens rear camera
- * - Gallery FAB: small icon, opens photo library
+ * - Camera FAB: centered, large; long-press or tap shows option menu
+ *   - "Chụp ảnh" → opens device camera
+ *   - "Chọn ảnh từ thư viện" → opens photo library
  */
 export function BottomNav() {
   const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   // File input: opens device CAMERA (capture="environment")
   const cameraInputRef = useRef<HTMLInputElement | null>(null)
@@ -27,12 +29,11 @@ export function BottomNav() {
   // File input: opens PHOTO LIBRARY (no capture attribute)
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
 
-  const handleCameraClick = () => cameraInputRef.current?.click()
-  const handleGalleryClick = () => galleryInputRef.current?.click()
-
   // Listen for memoir:focus-camera events (e.g. from empty state CTA)
   useEffect(() => {
-    const handler = () => handleCameraClick()
+    const handler = () => {
+      setMenuOpen(true)
+    }
     window.addEventListener('memoir:focus-camera', handler)
     return () => window.removeEventListener('memoir:focus-camera', handler)
   }, [])
@@ -42,7 +43,40 @@ export function BottomNav() {
     if (!file) return
     window.dispatchEvent(new CustomEvent('memoir:upload', { detail: { file } }))
     e.target.value = ''
+    setMenuOpen(false)
   }
+
+  const handleCameraClick = () => {
+    if (menuOpen) {
+      setMenuOpen(false)
+      cameraInputRef.current?.click()
+    } else {
+      setMenuOpen(true)
+    }
+  }
+
+  const handleMenuCamera = () => {
+    setMenuOpen(false)
+    cameraInputRef.current?.click()
+  }
+
+  const handleMenuGallery = () => {
+    setMenuOpen(false)
+    galleryInputRef.current?.click()
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-camera-menu]')) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [menuOpen])
 
   return (
     <>
@@ -96,7 +130,7 @@ export function BottomNav() {
             )
           })}
 
-          {/* Spacer — FAB buttons sit here in the center */}
+          {/* Spacer — Camera FAB + menu sits here in the center */}
           <div className="w-14 flex-shrink-0" aria-hidden="true" />
 
           {/* Right 2 tabs */}
@@ -118,47 +152,72 @@ export function BottomNav() {
             )
           })}
 
-          {/* Camera FAB — opens device camera */}
-          <button
-            onClick={handleCameraClick}
-            className={cn(
-              'absolute left-1/2 top-0 z-10',
-              'flex h-14 w-14 -translate-x-1/2 -translate-y-7',
-              'items-center justify-center',
-              'rounded-full',
-              'bg-gradient-to-br from-memoir-400 to-memoir-600',
-              'shadow-[0_4px_20px_rgba(147,51,234,0.45)]',
-              'ring-4 ring-white',
-              'transition-all duration-200',
-              'hover:scale-105 hover:shadow-[0_6px_28px_rgba(147,51,234,0.55)]',
-              'active:scale-95',
-              'focus:outline-none focus:ring-2 focus:ring-memoir-400 focus:ring-offset-2',
-            )}
-            aria-label="Chụp ảnh"
-            title="Chụp ảnh"
-          >
-            <Camera className="h-7 w-7 text-white drop-shadow" strokeWidth={2} />
-          </button>
+          {/* Camera FAB — shows menu on tap */}
+          <div className="absolute left-1/2 top-0 z-10 -translate-x-1/2" data-camera-menu>
+            {/* Options menu — appears above FAB */}
+            {menuOpen && (
+              <div className="absolute bottom-full left-1/2 mb-3 -translate-x-1/2 flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                {/* Chụp ảnh */}
+                <button
+                  onClick={handleMenuCamera}
+                  className="flex items-center gap-3 whitespace-nowrap rounded-xl bg-white px-4 py-3 shadow-lg border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all text-left"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-memoir-100">
+                    <Camera className="h-4 w-4 text-memoir-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Chụp ảnh</p>
+                    <p className="text-xs text-gray-400">Mở camera</p>
+                  </div>
+                </button>
 
-          {/* Gallery FAB — opens photo library */}
-          <button
-            onClick={handleGalleryClick}
-            className={cn(
-              'absolute left-[calc(50%+32px)] top-0 z-10',
-              'flex h-9 w-9 translate-y-1 items-center justify-center',
-              'rounded-full',
-              'bg-white border-2 border-memoir-300',
-              'shadow-[0_2px_12px_rgba(147,51,234,0.2)]',
-              'transition-all duration-200',
-              'hover:scale-105 hover:bg-memoir-50',
-              'active:scale-95',
-              'focus:outline-none focus:ring-2 focus:ring-memoir-400 focus:ring-offset-2',
+                {/* Chọn từ thư viện */}
+                <button
+                  onClick={handleMenuGallery}
+                  className="flex items-center gap-3 whitespace-nowrap rounded-xl bg-white px-4 py-3 shadow-lg border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all text-left"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-memoir-100">
+                    <Image className="h-4 w-4 text-memoir-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">Chọn ảnh</p>
+                    <p className="text-xs text-gray-400">Từ thư viện</p>
+                  </div>
+                </button>
+
+                {/* Arrow pointing down to FAB */}
+                <div className="self-center w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white" />
+              </div>
             )}
-            aria-label="Chọn ảnh từ thư viện"
-            title="Chọn ảnh từ thư viện"
-          >
-            <Image className="h-4 w-4 text-memoir-500" strokeWidth={2} />
-          </button>
+
+            {/* Camera FAB */}
+            <button
+              onClick={handleCameraClick}
+              className={cn(
+                'flex h-14 w-14 items-center justify-center',
+                'rounded-full',
+                'bg-gradient-to-br from-memoir-400 to-memoir-600',
+                'shadow-[0_4px_20px_rgba(147,51,234,0.45)]',
+                'ring-4 ring-white',
+                'transition-all duration-200',
+                menuOpen
+                  ? 'ring-2 ring-memoir-400 bg-memoir-500'
+                  : 'hover:scale-105 hover:shadow-[0_6px_28px_rgba(147,51,234,0.55)]',
+                'active:scale-95',
+                'focus:outline-none focus:ring-2 focus:ring-memoir-400 focus:ring-offset-2',
+              )}
+              aria-label="Chụp ảnh"
+              title="Chụp ảnh"
+            >
+              <Camera
+                className={cn(
+                  'h-7 w-7 text-white drop-shadow transition-transform',
+                  menuOpen && 'rotate-45',
+                )}
+                strokeWidth={2}
+              />
+            </button>
+          </div>
         </div>
       </nav>
     </>
