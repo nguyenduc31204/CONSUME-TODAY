@@ -8,11 +8,11 @@
 const MAX_WIDTH = 1280
 const MAX_HEIGHT = 1280
 
-/** Target file size (500 KB) — aggressive to survive slow mobile networks */
-const TARGET_SIZE = 500 * 1024
+/** Target file size — 1MB, enough for detailed photos on slow networks */
+const TARGET_SIZE = 1 * 1024 * 1024
 
-/** Try quality steps from high to low until under TARGET_SIZE */
-const QUALITY_STEPS = [0.7, 0.5, 0.35]
+/** Quality steps: start high (preserve detail), step down only if needed */
+const QUALITY_STEPS = [0.8, 0.6, 0.4]
 
 /**
  * Compress an image File for upload.
