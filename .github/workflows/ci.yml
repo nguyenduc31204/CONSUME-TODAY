@@ -185,18 +185,21 @@ jobs:
             set -e
             APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
             REGISTRY="docker.io/${{ secrets.DOCKER_USERNAME }}"
+            NEW_IMAGE="${REGISTRY}/memoir-backend:${{ github.sha }}"
 
             echo "📁 Navigating to app directory..."
             cd "${APP_DIR}"
 
             echo "📦 Pulling new backend image..."
-            docker pull "${REGISTRY}/memoir-backend:${{ github.sha }}"
+            docker pull "${NEW_IMAGE}"
 
-            echo "🏷️  Tagging image..."
-            docker tag "${REGISTRY}/memoir-backend:${{ github.sha }}" \
-                "${REGISTRY}/memoir-backend:latest"
+            echo "📝 Updating docker-compose.prod.yml to use new image..."
+            # Replace 'build: ./backend' with 'image: <new_image>' for this deploy
+            sed -i "s|^\( *\)build:|image: ${NEW_IMAGE}\n\1# build:|" docker-compose.prod.yml
 
             echo "🚀 Restarting backend..."
             docker compose -f docker-compose.prod.yml up -d --no-deps backend
+
+            echo "✅ Backend deployed! SHA: ${{ github.sha }}"
 
             echo "✅ Backend deployed! SHA: ${{ github.sha }}"
