@@ -268,18 +268,20 @@ export default function TransactionDetail() {
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const handleDownload = async () => {
-    if (!imageUrl) return
+    if (!id) return
+    const url = getProxyImageUrl(transaction?.image_url ?? transaction?.thumbnail_url ?? '')
+    if (!url) return
     try {
-      const res = await fetch(imageUrl)
+      const res = await fetch(url)
       const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
+      const objectUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url
-      a.download = `memoir-${transaction.id}.jpg`
+      a.href = objectUrl
+      a.download = `memoir-${id}.jpg`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      URL.revokeObjectURL(objectUrl)
     } catch {
       addToast('Không thể tải ảnh', 'error')
     }
