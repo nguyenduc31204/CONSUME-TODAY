@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Pencil, Trash2, Image as ImageIcon, DollarSign, Tag, Calendar, Wallet, AlignLeft, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, Image as ImageIcon, DollarSign, Tag, Calendar, Wallet, AlignLeft, TrendingUp, Download, X, Maximize2 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi } from '@/api/transactions'
 import { getProxyImageUrl } from '@/utils/imageUrl'
@@ -265,6 +265,25 @@ export default function TransactionDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showIncomeForm, setShowIncomeForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  const handleDownload = async () => {
+    if (!imageUrl) return
+    try {
+      const res = await fetch(imageUrl)
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `memoir-${transaction.id}.jpg`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      addToast('Không thể tải ảnh', 'error')
+    }
+  }
 
   const { data: editData, isLoading: isLoadingEdit } = useQuery<TransactionEditResponse, Error, TransactionEditResponse>({
     queryKey: ['transaction-edit', id],
@@ -407,20 +426,46 @@ export default function TransactionDetail() {
       ) : (
         /* ── View mode ──────────────────────────────── */
         <div className="pb-8">
-          {/* Hero image */}
+          {/* Hero image — full ratio, no crop */}
           {imageUrl ? (
             <div className="relative w-full">
-              
-              <img
-                src={imageUrl}
-                alt={transaction.merchant_name ?? 'Ảnh kỷ niệm'}
-                className="h-64 w-full object-cover"
-              />
-              {transaction.is_life_log && (
-                <div className="absolute left-3 top-3 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white uppercase tracking-wide">
-                  Life Log
-                </div>
-              )}
+              {/* Image: keep original aspect ratio, show full height */}
+              <div
+                className="relative w-full bg-gray-100 cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
+                style={{ maxHeight: '70vh' }}
+              >
+                <img
+                  src={imageUrl}
+                  alt={transaction.merchant_name ?? 'Ảnh kỷ niệm'}
+                  className="max-h-[70vh] w-full object-contain"
+                />
+                {transaction.is_life_log && (
+                  <div className="absolute left-3 top-3 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white uppercase tracking-wide">
+                    Life Log
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons overlay */}
+              <div className="absolute right-3 top-3 flex gap-2">
+                <button
+                  onClick={handleDownload}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+                  title="Lưu ảnh"
+                  aria-label="Lưu ảnh"
+                >
+                  <Download className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setLightboxOpen(true)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+                  title="Phóng to"
+                  aria-label="Phóng to"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ) : (
             <div className="flex h-40 w-full items-center justify-center bg-gray-100">
@@ -560,6 +605,37 @@ export default function TransactionDetail() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox — fullscreen image viewer */}
+      {lightboxOpen && imageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Đóng"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          <button
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-white text-sm font-medium backdrop-blur-sm hover:bg-white/20 transition-colors"
+            onClick={(e) => { e.stopPropagation(); handleDownload() }}
+          >
+            <Download className="h-4 w-4" />
+            Lưu ảnh về máy
+          </button>
+
+          <img
+            src={imageUrl}
+            alt={transaction.merchant_name ?? 'Ảnh kỷ niệm'}
+            className="max-h-full max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 

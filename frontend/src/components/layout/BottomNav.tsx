@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Camera, Home, Calendar, BarChart3, User } from 'lucide-react'
+import { Camera, Image, Home, Calendar, BarChart3, User } from 'lucide-react'
 import { cn } from '@/utils/cn'
 
 const NAV_ITEMS = [
@@ -15,17 +15,20 @@ const NAV_ITEMS = [
  *
  * Spec:
  * - 4 tabs: Hôm Nay | Nhật ký | Nhìn lại | Cá nhân
- * - Camera FAB: centered, large, always visible, memoir purple
- * - Camera opens device camera or photo library, triggers upload flow
+ * - Camera FAB: centered, large, opens rear camera
+ * - Gallery FAB: small icon, opens photo library
  */
 export function BottomNav() {
   const location = useLocation()
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const handleCameraClick = () => {
-    // Trigger the hidden file input
-    fileInputRef.current?.click()
-  }
+  // File input: opens device CAMERA (capture="environment")
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
+
+  // File input: opens PHOTO LIBRARY (no capture attribute)
+  const galleryInputRef = useRef<HTMLInputElement | null>(null)
+
+  const handleCameraClick = () => cameraInputRef.current?.click()
+  const handleGalleryClick = () => galleryInputRef.current?.click()
 
   // Listen for memoir:focus-camera events (e.g. from empty state CTA)
   useEffect(() => {
@@ -37,17 +40,27 @@ export function BottomNav() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // Dispatch custom event picked up by AppShell / useUpload
     window.dispatchEvent(new CustomEvent('memoir:upload', { detail: { file } }))
-    // Reset input so same file can be selected again
     e.target.value = ''
   }
 
   return (
     <>
-      {/* Hidden file input — opens camera or gallery on mobile */}
+      {/* Hidden file input — CAMERA only */}
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={handleFileChange}
+      />
+
+      {/* Hidden file input — GALLERY only */}
+      <input
+        ref={galleryInputRef}
         type="file"
         accept="image/*"
         className="sr-only"
@@ -83,7 +96,7 @@ export function BottomNav() {
             )
           })}
 
-          {/* Spacer — Camera FAB sits here in the center */}
+          {/* Spacer — FAB buttons sit here in the center */}
           <div className="w-14 flex-shrink-0" aria-hidden="true" />
 
           {/* Right 2 tabs */}
@@ -105,7 +118,7 @@ export function BottomNav() {
             )
           })}
 
-          {/* Camera FAB — Always visible, centered, above nav */}
+          {/* Camera FAB — opens device camera */}
           <button
             onClick={handleCameraClick}
             className={cn(
@@ -125,6 +138,26 @@ export function BottomNav() {
             title="Chụp ảnh"
           >
             <Camera className="h-7 w-7 text-white drop-shadow" strokeWidth={2} />
+          </button>
+
+          {/* Gallery FAB — opens photo library */}
+          <button
+            onClick={handleGalleryClick}
+            className={cn(
+              'absolute left-[calc(50%+32px)] top-0 z-10',
+              'flex h-9 w-9 translate-y-1 items-center justify-center',
+              'rounded-full',
+              'bg-white border-2 border-memoir-300',
+              'shadow-[0_2px_12px_rgba(147,51,234,0.2)]',
+              'transition-all duration-200',
+              'hover:scale-105 hover:bg-memoir-50',
+              'active:scale-95',
+              'focus:outline-none focus:ring-2 focus:ring-memoir-400 focus:ring-offset-2',
+            )}
+            aria-label="Chọn ảnh từ thư viện"
+            title="Chọn ảnh từ thư viện"
+          >
+            <Image className="h-4 w-4 text-memoir-500" strokeWidth={2} />
           </button>
         </div>
       </nav>
