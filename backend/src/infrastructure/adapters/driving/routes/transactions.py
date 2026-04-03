@@ -766,7 +766,7 @@ async def download_transaction_image(
             f"Check R2_PUBLIC_URL env var on server."
         )
 
-    storage_key = image_url[len(r2_public) + 1:]
+    storage_key = image_url[len(r2_public) + 1 :]
 
     storage = R2StorageAdapter()
     try:
