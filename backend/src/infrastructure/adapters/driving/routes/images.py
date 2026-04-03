@@ -2,10 +2,9 @@
 Image Routes — Upload, retrieve, and delete images with R2 storage.
 """
 
-from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
 from uuid import UUID
 
-from botocore.exceptions import ClientError
 from fastapi import APIRouter, Cookie, Depends, File, Header, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,8 +20,6 @@ from src.infrastructure.shared.loguru_config import get_logger
 logger = get_logger()
 
 router = APIRouter()
-
-_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def _get_user_id(authorization: str = Header(...)) -> UUID:
@@ -128,10 +125,10 @@ async def upload_image(
 @router.get("/images/proxy")
 async def proxy_image(url: str):
     """
-    Public proxy endpoint: browser → backend → R2.
+    Public proxy endpoint: browser → backend → R2 via presigned URL.
     Accepts the full R2 image URL as ?url=... query param.
-    No auth required — prevents 403 from R2 private buckets.
-    Only allows our own R2 domain to prevent abuse.
+    No auth required — generates a presigned URL (expires in 1 hour).
+    Only allows our own R2 domain to prevent SSRF abuse.
     """
     # Extract R2 key from full URL (e.g. https://pub-xxx.r2.dev/images/abc.jpg → images/abc.jpg)
     r2_key = _extract_r2_key(url)
@@ -143,18 +140,13 @@ async def proxy_image(url: str):
         raise HTTPException(status_code=400, detail="Invalid path.")
 
     storage = R2StorageAdapter()
-    image_bytes, content_type = await _fetch_image_bytes(storage, r2_key)
 
-    from fastapi.responses import Response
+    # Generate presigned GET URL (valid 1 hour)
+    presigned_url = await storage.get_presigned_get_url(r2_key, expires_in=3600)
 
-    return Response(
-        content=image_bytes,
-        media_type=content_type,
-        headers={
-            "Cache-Control": "public, max-age=31536000, immutable",
-            "Content-Length": str(len(image_bytes)),
-        },
-    )
+    # Redirect browser to presigned URL
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=presigned_url, status_code=302)
 
 
 def _extract_r2_key(r2_url: str) -> str | None:
@@ -167,7 +159,6 @@ def _extract_r2_key(r2_url: str) -> str | None:
     if not r2_url:
         return None
     try:
-        from urllib.parse import urlparse
         parsed = urlparse(r2_url)
         # Whitelist: only allow our own R2 domain
         if parsed.hostname and allowed_host and parsed.hostname != allowed_host and not allowed_host.startswith(parsed.hostname):
@@ -176,49 +167,6 @@ def _extract_r2_key(r2_url: str) -> str | None:
         return key if key else None
     except Exception:
         return None
-
-
-async def _fetch_image_bytes(storage: R2StorageAdapter, path: str) -> tuple[bytes, str]:
-    """Fetch image bytes from R2. Falls back to thumbnail on NoSuchKey."""
-    loop = __import__("asyncio").get_running_loop()
-
-    def _do() -> tuple[bytes, str]:
-        try:
-            response = storage.client.get_object(
-                Bucket=storage.settings.r2_bucket_name,
-                Key=path,
-            )
-            body = response["Body"].read()
-            content_type = response.get("ContentType", "image/jpeg")
-            return body, content_type
-        except ClientError as e:
-            code = e.response["Error"]["Code"]
-            logger.warning(f"R2 get_object failed for '{path}': {code}")
-            if code == "NoSuchKey":
-                # Try thumbnail fallback: images/... → thumbnails/...
-                if path.startswith("images/"):
-                    thumb_path = "thumbnails/" + path[7:]
-                    parts = thumb_path.rsplit(".", 1)
-                    thumb_path = parts[0] + "_thumb.jpg"
-                    try:
-                        response = storage.client.get_object(
-                            Bucket=storage.settings.r2_bucket_name,
-                            Key=thumb_path,
-                        )
-                        body = response["Body"].read()
-                        return body, "image/jpeg"
-                    except ClientError:
-                        pass  # Fall through to raise original
-            elif code in ("InvalidArgument", "AccessDenied", "AuthorizationError"):
-                raise HTTPException(
-                    status_code=502,
-                    detail=f"R2 bucket '{storage.settings.r2_bucket_name}' is private or credentials are invalid. "
-                    f"Please enable public access at https://dash.cloudflare.com → R2 → Object Storage.",
-                )
-            raise
-
-    return await loop.run_in_executor(_executor, _do)
-
 
 @router.get("/images/{image_id}")
 async def get_image(
