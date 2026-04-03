@@ -179,6 +179,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           envs: github.sha,github.repository_owner
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           script: |
             set -e
             APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
@@ -193,6 +195,8 @@ jobs:
 
             echo "📁 Updating code on server..."
             cd "${APP_DIR}"
+            # Use GitHub token for private repo access
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
             git fetch origin main
             git reset --hard origin/main
 
