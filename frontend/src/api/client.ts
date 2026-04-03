@@ -137,7 +137,7 @@ export class ApiClient {
 
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30_000)
+      const timeoutId = setTimeout(() => controller.abort(), 60_000)
 
       const response = await fetch(url, {
         method: 'POST',

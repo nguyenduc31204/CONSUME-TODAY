@@ -1,40 +1,35 @@
 /**
- * Image compression utility for mobile uploads.
- * Rear camera photos can be 8–20MB — we aggressively resize + compress
- * to ensure upload succeeds on mobile networks.
+ * Image compression for mobile uploads.
+ * Target: ~5MB max per photo, preserve as much detail as possible.
+ * Canvas resize + JPEG quality stepped down only if still over 5MB.
  */
 
-/** Max dimensions — resize to this (keeps ratio) */
-const MAX_WIDTH = 1280
-const MAX_HEIGHT = 1280
-
-/** Target file size — 1MB, enough for detailed photos on slow networks */
-const TARGET_SIZE = 1 * 1024 * 1024
-
-/** Quality steps: start high (preserve detail), step down only if needed */
-const QUALITY_STEPS = [0.8, 0.6, 0.4]
+const MAX_PIXELS = 3_000_000 // 3 megapixels — keeps canvas from crashing on mobile
+const TARGET_SIZE = 5 * 1024 * 1024 // 5MB — user's target
+const QUALITY_STEPS = [0.92, 0.82, 0.72]
 
 /**
- * Compress an image File for upload.
- * - Always resize to ≤ 1280px longest side
- * - Recompress to JPEG, quality stepped down until ≤ 500KB
- * - Falls back to original if compression fails
+ * Compress a File for upload.
+ *  1. Resize to ≤ 3MP to avoid mobile canvas memory crash
+ *  2. JPEG encode at stepped quality until ≤ 5MB
+ *  3. Fallback to original if anything fails
  */
 export async function compressImage(file: File): Promise<File> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
-
     const img = new Image()
 
     img.onload = () => {
       URL.revokeObjectURL(url)
 
-      // Calculate resize dimensions
+      // Determine target dimensions to stay under MAX_PIXELS
+      const pixels = img.width * img.height
       let { width, height } = img
-      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height)
-        width = Math.round(width * ratio)
-        height = Math.round(height * ratio)
+
+      if (pixels > MAX_PIXELS) {
+        const scale = Math.sqrt(MAX_PIXELS / pixels)
+        width = Math.round(width * scale)
+        height = Math.round(height * scale)
       }
 
       const canvas = document.createElement('canvas')
@@ -42,53 +37,33 @@ export async function compressImage(file: File): Promise<File> {
       canvas.height = height
 
       const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        resolve(file)
-        return
-      }
+      if (!ctx) { resolve(file); return }
 
       ctx.drawImage(img, 0, 0, width, height)
 
-      const tryCompress = (stepIndex: number) => {
-        const quality = QUALITY_STEPS[stepIndex]
+      const tryQuality = (step: number): void => {
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              // Blob failed — try lower quality
-              if (stepIndex < QUALITY_STEPS.length - 1) {
-                tryCompress(stepIndex + 1)
-              } else {
-                resolve(file)
-              }
-              return
+              if (step < QUALITY_STEPS.length - 1) { tryQuality(step + 1); return }
+              resolve(file); return
             }
-
-            if (blob.size <= TARGET_SIZE || stepIndex >= QUALITY_STEPS.length - 1) {
-              const baseName = file.name.replace(/\.[^.]+$/, '')
-              const compressedFile = new File(
-                [blob],
-                `${baseName}.jpg`,
-                { type: 'image/jpeg' },
-              )
-              resolve(compressedFile)
+            if (blob.size <= TARGET_SIZE || step >= QUALITY_STEPS.length - 1) {
+              const name = file.name.replace(/\.[^.]+$/, '')
+              resolve(new File([blob], `${name}.jpg`, { type: 'image/jpeg' }))
             } else {
-              // Still too big — try lower quality
-              tryCompress(stepIndex + 1)
+              tryQuality(step + 1)
             }
           },
           'image/jpeg',
-          quality,
+          QUALITY_STEPS[step],
         )
       }
 
-      tryCompress(0)
+      tryQuality(0)
     }
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(file)
-    }
-
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
     img.src = url
   })
 }
