@@ -172,16 +172,17 @@ jobs:
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
 
       - name: Deploy to production server via SSH
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          envs: github.sha,github.repository_owner
-          env:
-            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          envs: github.sha,github.repository_owner,GH_TOKEN
           script: |
+            export GH_TOKEN="$GH_TOKEN"
             set -e
             APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
             REGISTRY="docker.io/${{ secrets.DOCKER_USERNAME }}"
