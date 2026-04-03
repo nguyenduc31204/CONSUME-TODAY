@@ -136,11 +136,16 @@ export class ApiClient {
     }
 
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30_000)
+
       const response = await fetch(url, {
         method: 'POST',
         body: formData,
         headers,
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
 
       // 401 — token invalid or expired on the server side
       if (response.status === 401) {
@@ -157,10 +162,11 @@ export class ApiClient {
       const data: ApiResponse<T> = await response.json()
       return data
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Upload failed'
       return {
         success: false,
         data: null,
-        message: err instanceof Error ? err.message : 'Upload failed',
+        message: msg.includes('aborted') ? 'Kết nối chậm, vui lòng thử lại.' : msg,
       }
     }
   }
