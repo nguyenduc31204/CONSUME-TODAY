@@ -758,10 +758,15 @@ async def download_transaction_image(
 
     settings = get_settings()
     r2_public = settings.r2_public_url.rstrip("/")
-    if not transaction.image_url.startswith(r2_public + "/"):
-        raise NotFoundException(message="Image URL not found in storage.")
+    image_url = transaction.image_url
 
-    storage_key = transaction.image_url[len(r2_public) + 1 :]
+    if not image_url.startswith(r2_public + "/"):
+        raise NotFoundException(
+            message=f"Image URL mismatch. DB: '{image_url}', Expected prefix: '{r2_public}/'. "
+            f"Check R2_PUBLIC_URL env var on server."
+        )
+
+    storage_key = image_url[len(r2_public) + 1:]
 
     storage = R2StorageAdapter()
     try:
