@@ -6,6 +6,7 @@ import { CardPopup } from '@/components/common/CardPopup'
 import { useUpload } from '@/hooks/useUpload'
 import { useAuthStore } from '@/stores/authStore'
 import { useUiStore } from '@/stores/uiStore'
+import { useUploadStore } from '@/stores/uploadStore'
 import { compressImage } from '@/utils/imageCompression'
 
 interface AppShellProps {
@@ -30,14 +31,20 @@ export function AppShell({ children }: AppShellProps) {
         return
       }
       const customEvent = e as CustomEvent<{ file: File }>
+      const originalFile = customEvent.detail.file
+
+      // Show compressing state in CardPopup
+      const store = useUploadStore.getState()
+      store.startCompressing(originalFile)
 
       // Compress image before upload to avoid timeout on large mobile photos
       try {
-        const compressed = await compressImage(customEvent.detail.file)
+        const compressed = await compressImage(originalFile)
+        // Compress succeeded — useUpload will call startUpload(file) when mutation starts
         triggerUpload(compressed)
       } catch {
         // Fallback: upload original if compression fails
-        triggerUpload(customEvent.detail.file)
+        triggerUpload(originalFile)
       }
     }
     window.addEventListener('memoir:upload', handler)

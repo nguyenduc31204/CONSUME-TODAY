@@ -4,6 +4,9 @@ import type { UploadState, UploadTransactionResponse } from '@/types/upload'
 interface UploadStore {
   state: UploadState
 
+  /** Start compression (image is being processed before upload) */
+  startCompressing: (file: File) => void
+
   /** Start upload: user selected a file */
   startUpload: (file: File) => void
 
@@ -31,6 +34,8 @@ interface UploadStore {
 
 export const useUploadStore = create<UploadStore>((set) => ({
   state: { phase: 'idle' },
+
+  startCompressing: (file) => set({ state: { phase: 'compressing', file } }),
 
   startUpload: (file) => set({ state: { phase: 'uploading', file } }),
 

@@ -78,6 +78,24 @@ export function BottomNav() {
     return () => document.removeEventListener('click', handler)
   }, [menuOpen])
 
+  // Listen for retry events from CardPopup error state
+  useEffect(() => {
+    const openCamera = () => {
+      setMenuOpen(false)
+      cameraInputRef.current?.click()
+    }
+    const openGallery = () => {
+      setMenuOpen(false)
+      galleryInputRef.current?.click()
+    }
+    window.addEventListener('memoir:retry-camera', openCamera)
+    window.addEventListener('memoir:retry-gallery', openGallery)
+    return () => {
+      window.removeEventListener('memoir:retry-camera', openCamera)
+      window.removeEventListener('memoir:retry-gallery', openGallery)
+    }
+  }, [])
+
   return (
     <>
       {/* Hidden file input — CAMERA only */}

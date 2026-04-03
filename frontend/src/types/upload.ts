@@ -80,6 +80,7 @@ export interface TransactionEditResponse {
 
 export type UploadState =
   | { phase: 'idle' }
+  | { phase: 'compressing'; file: File }
   | { phase: 'uploading'; file: File }
   | { phase: 'preview'; data: UploadTransactionResponse; file: File }
   | { phase: 'editing'; data: UploadTransactionResponse; file: File }

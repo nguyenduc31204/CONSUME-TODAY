@@ -6,7 +6,7 @@ import { useUploadStore } from '@/stores/uploadStore'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 import { transactionsApi } from '@/api/transactions'
-import type { UploadTransactionResponse, TransactionEditResponse, WalletSummary, CategorySummary } from '@/types/upload'
+import type { UploadTransactionResponse, TransactionEditResponse, WalletSummary, CategorySummary, UploadState } from '@/types/upload'
 import type { TransactionUpdateData } from '@/types/transaction'
 import { Spinner } from '@/components/ui/Spinner'
 import { getProxyImageUrl } from '@/utils/imageUrl'
@@ -319,20 +319,21 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
 
   if (state.phase === 'idle') return null
 
-  const data = state.phase === 'uploading' || state.phase === 'error' || state.phase === 'done'
+  const data = state.phase === 'uploading' || state.phase === 'error' || state.phase === 'done' || state.phase === 'compressing'
     ? null
-    : state.data
+    : (state as Extract<UploadState, { data: unknown }>).data
 
-  const file = state.phase === 'uploading'
-    ? state.file
-    : state.phase === 'preview' || state.phase === 'editing'
-      ? state.file
-      : null
+  const file = state.phase === 'preview' || state.phase === 'editing' || state.phase === 'compressing' || state.phase === 'uploading'
+    ? (state as Extract<UploadState, { file: File }>).file
+    : null
 
   const isUploading = state.phase === 'uploading'
+  const isCompressing = state.phase === 'compressing'
   const isPreview = state.phase === 'preview'
   const isEditing = state.phase === 'editing'
   const isSaving = state.phase === 'saving'
+  const isError = state.phase === 'error'
+  const errorMessage = isError ? state.message : null
 
   // Preview thumbnail URL from upload response or local file
   const previewUrl = getProxyImageUrl(
@@ -378,15 +379,19 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
     }
   }
 
-  if (isUploading) {
+  if (isCompressing || isUploading) {
+    const phase = isCompressing ? 'Đang nén ảnh...' : 'Đang tải lên...'
+    const sub = isCompressing
+      ? 'Tối ưu ảnh để gửi nhanh hơn'
+      : 'AI đang bóc tách thông tin'
+    const previewSrc = file ? URL.createObjectURL(file) : null
     return (
       <Overlay onClose={handleDismiss}>
         <div className="flex flex-col items-center gap-4 py-8 px-6">
           <div className="relative">
-            {file && (
-              
+            {previewSrc && (
               <img
-                src={URL.createObjectURL(file)}
+                src={previewSrc}
                 alt="Đang xử lý..."
                 className="w-32 h-32 rounded-2xl object-cover opacity-60"
               />
@@ -396,8 +401,8 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
             </div>
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-700">Đang xử lý AI...</p>
-            <p className="text-xs text-gray-400 mt-1">OCR đang bóc tách thông tin</p>
+            <p className="text-sm font-medium text-gray-700">{phase}</p>
+            <p className="text-xs text-gray-400 mt-1">{sub}</p>
           </div>
         </div>
       </Overlay>
@@ -410,6 +415,41 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
         <div className="flex flex-col items-center gap-4 py-8 px-6">
           <Spinner size="lg" />
           <p className="text-sm font-medium text-gray-700">Đang lưu...</p>
+        </div>
+      </Overlay>
+    )
+  }
+
+  if (isError) {
+    return (
+      <Overlay onClose={handleDismiss}>
+        <div className="flex flex-col items-center gap-5 py-8 px-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+            <svg className="h-7 w-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-base font-semibold text-gray-900">Xử lý thất bại</p>
+            <p className="text-sm text-gray-500 mt-1">{errorMessage ?? 'Đã xảy ra lỗi khi tải ảnh lên.'}</p>
+          </div>
+          <div className="flex gap-2 w-full">
+            <button
+              onClick={handleDismiss}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors text-sm"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={() => {
+                useUploadStore.getState().reset()
+                window.dispatchEvent(new CustomEvent('memoir:retry-camera'))
+              }}
+              className="flex-1 py-2.5 rounded-xl bg-memoir-500 text-white font-medium hover:bg-memoir-600 transition-colors text-sm"
+            >
+              Thử lại
+            </button>
+          </div>
         </div>
       </Overlay>
     )
