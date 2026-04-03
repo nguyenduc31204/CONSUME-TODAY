@@ -186,6 +186,9 @@ jobs:
             APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
             REGISTRY="docker.io/${{ secrets.DOCKER_USERNAME }}"
 
+            echo "📁 Navigating to app directory..."
+            cd "${APP_DIR}"
+
             echo "📦 Pulling new backend image..."
             docker pull "${REGISTRY}/memoir-backend:${{ github.sha }}"
 
