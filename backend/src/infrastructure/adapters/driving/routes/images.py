@@ -125,22 +125,25 @@ async def upload_image(
     }
 
 
-@router.get("/images/proxy/{path:path}")
-async def proxy_image(
-    path: str,
-    user_id: UUID = Depends(_get_user_id_header_or_cookie),
-):
+@router.get("/images/proxy")
+async def proxy_image(url: str):
     """
-    Proxy endpoint: browser → backend → R2.
-    Reads JWT from Authorization header OR memoir_token cookie
-    (<img> tags cannot send custom headers, but cookies work automatically).
+    Public proxy endpoint: browser → backend → R2.
+    Accepts the full R2 image URL as ?url=... query param.
+    No auth required — prevents 403 from R2 private buckets.
+    Only allows our own R2 domain to prevent abuse.
     """
+    # Extract R2 key from full URL (e.g. https://pub-xxx.r2.dev/images/abc.jpg → images/abc.jpg)
+    r2_key = _extract_r2_key(url)
+    if not r2_key:
+        raise HTTPException(status_code=400, detail="Invalid R2 image URL.")
+
     # Path traversal guard
-    if ".." in path or path.startswith("/"):
+    if ".." in r2_key or r2_key.startswith("/"):
         raise HTTPException(status_code=400, detail="Invalid path.")
 
     storage = R2StorageAdapter()
-    image_bytes, content_type = await _fetch_image_bytes(storage, path)
+    image_bytes, content_type = await _fetch_image_bytes(storage, r2_key)
 
     from fastapi.responses import Response
 
@@ -152,6 +155,27 @@ async def proxy_image(
             "Content-Length": str(len(image_bytes)),
         },
     )
+
+
+def _extract_r2_key(r2_url: str) -> str | None:
+    """
+    Extract R2 key path from a full R2 public URL.
+    Only allows our configured R2_PUBLIC_URL domain (prevents SSRF/abuse).
+    """
+    settings = get_settings()
+    allowed_host = settings.r2_public_url.replace("https://", "").replace("http://", "").rstrip("/")
+    if not r2_url:
+        return None
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(r2_url)
+        # Whitelist: only allow our own R2 domain
+        if parsed.hostname and allowed_host and parsed.hostname != allowed_host and not allowed_host.startswith(parsed.hostname):
+            return None
+        key = parsed.path.lstrip("/")
+        return key if key else None
+    except Exception:
+        return None
 
 
 async def _fetch_image_bytes(storage: R2StorageAdapter, path: str) -> tuple[bytes, str]:
