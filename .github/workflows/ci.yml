@@ -151,12 +151,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build & push backend image
         uses: docker/build-push-action@v6
@@ -164,8 +164,8 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/memoir-backend:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/memoir-backend:latest
+            docker.io/${{ secrets.DOCKER_USERNAME }}/memoir-backend:${{ github.sha }}
+            docker.io/${{ secrets.DOCKER_USERNAME }}/memoir-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -182,7 +182,7 @@ jobs:
           script: |
             set -e
             APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
-            REGISTRY="ghcr.io/${{ github.repository_owner }}"
+            REGISTRY="docker.io/${{ secrets.DOCKER_USERNAME }}"
 
             echo "📦 Pulling new backend image..."
             docker pull "${REGISTRY}/memoir-backend:${{ github.sha }}"
@@ -197,7 +197,7 @@ jobs:
             git reset --hard origin/main
 
             echo "🚀 Restarting backend..."
-            sed -i "s|image: ghcr.io.*memoir-backend:.*|image: ${REGISTRY}/memoir-backend:${{ github.sha }}|" docker-compose.prod.yml
+            sed -i "s|image: docker.io/.*memoir-backend:.*|image: ${REGISTRY}/memoir-backend:${{ github.sha }}|" docker-compose.prod.yml
             docker compose -f docker-compose.prod.yml up -d --no-deps backend
 
             echo "✅ Backend deployed! SHA: ${{ github.sha }}"
