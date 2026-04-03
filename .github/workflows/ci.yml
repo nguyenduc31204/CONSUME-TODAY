@@ -180,9 +180,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          envs: github.sha,github.repository_owner,GH_TOKEN
+          envs: github.sha,github.repository_owner
           script: |
-            export GH_TOKEN="$GH_TOKEN"
             set -e
             APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
             REGISTRY="docker.io/${{ secrets.DOCKER_USERNAME }}"
@@ -194,15 +193,7 @@ jobs:
             docker tag "${REGISTRY}/memoir-backend:${{ github.sha }}" \
                 "${REGISTRY}/memoir-backend:latest"
 
-            echo "📁 Updating code on server..."
-            cd "${APP_DIR}"
-            # Use GitHub token for private repo access
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-            git fetch origin main
-            git reset --hard origin/main
-
             echo "🚀 Restarting backend..."
-            sed -i "s|image: docker.io/.*memoir-backend:.*|image: ${REGISTRY}/memoir-backend:${{ github.sha }}|" docker-compose.prod.yml
             docker compose -f docker-compose.prod.yml up -d --no-deps backend
 
             echo "✅ Backend deployed! SHA: ${{ github.sha }}"
