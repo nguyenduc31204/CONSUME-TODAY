@@ -1,22 +1,25 @@
 # ─────────────────────────────────────────────────────────────
 # MemoirFinance — GitHub Actions CI/CD
 #
-# CI: lint → type-check → test (on every push/PR)
-# CD: build Docker images → push to registry → deploy (on push to main)
+# CI: lint → type-check → test (mọi push/PR)
+# CD Backend: Docker build → push → deploy qua SSH
+# CD Frontend: Vercel deploy
 #
-# Required secrets (Settings → Secrets and variables → Actions):
-#   DOCKER_USERNAME        Docker Hub / GHCR username
-#   DOCKER_PASSWORD        Access token / PAT
-#   SSH_HOST               Production server host
-#   SSH_USER               SSH user
-#   SSH_KEY                Private SSH key
+# Secrets needed (Settings → Secrets and variables → Actions):
+#   BACKEND
+#     SSH_HOST       — IP/domain production server
+#     SSH_USER       — SSH user (e.g. root, ubuntu)
+#     SSH_KEY        — Private SSH key (PEM format)
+#     SSH_PORT       — SSH port (default: 22)
 #
-# Required variables (Settings → Secrets and variables → Actions → Variables):
-#   VITE_API_BASE_URL      Public API URL (e.g. https://api.yourdomain.com/api/v1)
+#   FRONTEND
+#     VERCEL_TOKEN   — Vercel API token
+#     VERCEL_ORG_ID  — Vercel org ID (team/user ID)
+#     VERCEL_PROJECT_ID — Vercel project ID
 #
-# Optional:
-#   DOCKER_REGISTRY        defaults to ghcr.io (GitHub Container Registry)
-#   IMAGE_PREFIX           defaults to $DOCKER_USERNAME/memoir
+# Variables needed (Settings → Secrets and variables → Actions → Variables):
+#   VITE_API_BASE_URL  — e.g. https://api.testduc.io.vn/api/v1
+#   BACKEND_SSH_PATH   — path to repo on server (e.g. /opt/memoir)
 # ─────────────────────────────────────────────────────────────
 
 name: CI/CD
@@ -28,8 +31,6 @@ on:
     branches: [main, master]
 
 env:
-  DOCKER_REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/memoir
   NODE_VERSION: "20"
   PYTHON_VERSION: "3.12"
 
@@ -75,15 +76,12 @@ jobs:
           pip install -r requirements.txt
           pip install httpx  # for backend health in CI
 
-      # ── Lint ──────────────────────────────────────────────
       - name: Lint with ruff
         run: ruff check src/
 
-      # ── Type-check (ruff) ─────────────────────────────────
-      - name: ruff format check
+      - name: Format check
         run: ruff format --check src/
 
-      # ── Test ──────────────────────────────────────────────
       - name: Run unit tests
         env:
           DATABASE_URL: postgresql+asyncpg://memoir:memoir@localhost:5432/memoirfinance_test
@@ -129,22 +127,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── Lint ──────────────────────────────────────────────
       - name: Lint with ESLint
         run: npm run lint -- --max-warnings 34
 
-      # ── Type-check ─────────────────────────────────────────
       - name: Type-check with TypeScript
         run: npx tsc --noEmit
 
-      # ── Build ──────────────────────────────────────────────
       - name: Build for production
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://api.example.com/api/v1' }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_APP_ENV: production
         run: npm run build
 
-      # ── Upload build artifact ────────────────────────────────
       - name: Upload frontend build
         uses: actions/upload-artifact@v4
         with:
@@ -153,12 +147,13 @@ jobs:
           retention-days: 7
 
   # ────────────────────────────────────────────────────────────
-  # Build & Push Docker Images (on main/master push)
+  # Deploy Backend — Docker build & push → deploy via SSH
+  # Chạy trên mọi push vào main (sau khi backend-ci pass)
   # ────────────────────────────────────────────────────────────
-  docker:
-    name: Build & Push Docker Images
+  deploy-backend:
+    name: Deploy Backend
     runs-on: ubuntu-latest
-    needs: [backend-ci, frontend-ci]
+    needs: backend-ci
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment: production
 
@@ -172,48 +167,66 @@ jobs:
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── Backend image ─────────────────────────────────────
       - name: Build & push backend image
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:latest
+            ghcr.io/${{ github.repository_owner }}/memoir-backend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/memoir-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             PYTHON_VERSION=${{ env.PYTHON_VERSION }}
 
-      # ── Frontend image ────────────────────────────────────
-      - name: Build & push frontend image
-        uses: docker/build-push-action@v6
+      - name: Deploy to production server via SSH
+        uses: appleboy/ssh-action@v0.1.11
         with:
-          context: ./frontend
-          push: true
-          target: production
-          tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ github.sha }}
-            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
-            VITE_APP_ENV=production
-            NODE_VERSION=${{ env.NODE_VERSION }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          envs: github.sha,github.repository_owner
+          script: |
+            set -e
+            APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
+            REGISTRY="ghcr.io/${{ github.repository_owner }}"
+
+            echo "📦 Pulling new backend image..."
+            docker pull "${REGISTRY}/memoir-backend:${{ github.sha }}"
+
+            echo "🏷️  Tagging image..."
+            docker tag "${REGISTRY}/memoir-backend:${{ github.sha }}" \
+                "${REGISTRY}/memoir-backend:latest"
+
+            echo "📁 Navigating to app directory..."
+            cd "${APP_DIR}"
+
+            echo "🗄️  Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "🚀 Restarting backend container..."
+            # Tag the new image in docker-compose context
+            sed -i "s|image: ghcr.io.*memoir-backend:.*|image: ${REGISTRY}/memoir-backend:${{ github.sha }}|" docker-compose.prod.yml
+
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend
+
+            echo "✅ Backend deployed! Commit: ${{ github.sha }}"
 
   # ────────────────────────────────────────────────────────────
-  # Deploy to Production Server (on main/master push)
+  # Deploy Frontend — Vercel
+  # Chạy song song với deploy-backend (sau khi frontend-ci pass)
   # ────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy to Production
+  deploy-frontend:
+    name: Deploy Frontend
     runs-on: ubuntu-latest
-    needs: docker
+    needs: frontend-ci
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     environment: production
 
@@ -221,31 +234,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+      - name: Deploy to Vercel (production)
         run: |
-          echo "${{ secrets.SSH_KEY }}" | base64 -d > deploy_key
-          chmod 600 deploy_key
-
-      - name: Copy deployment script to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: deploy.sh
-          target: /tmp/
-
-      - name: Run deploy script on server
-        uses: appleboy/ssh-action@v0.1.11
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            chmod +x /tmp/deploy.sh
-            bash /tmp/deploy.sh ${{ github.sha }} ${{ env.DOCKER_REGISTRY }} ${{ env.IMAGE_PREFIX }}
+          cd frontend
+          # Deploy from dist/ — bypasses build step
+          # VERCEL_ORG_ID and VERCEL_PROJECT_ID come from .vercel/project.json
+          # if not set via env, use flags
+          vercel deploy ./dist \
+            --prod \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            ${VERCEL_ORG_ID:+--scope=${{ secrets.VERCEL_ORG_ID }}} \
+            ${VERCEL_PROJECT_ID:+--yes}
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_APP_ENV: production
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Deploy summary
         run: |
-          echo "✅ Deployment triggered for commit ${{ github.sha }}"
-          echo "🌐 App: https://memoir.example.com"
+          echo "✅ Frontend deployed to Vercel!"
+          echo "🌐 URL: https://testduc.io.vn"
