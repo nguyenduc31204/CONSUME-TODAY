@@ -1,6 +1,8 @@
 # ─────────────────────────────────────────────────────────────
 # MemoirFinance — Production Docker Compose
-# Usage: docker compose -f docker-compose.prod.yml up -d
+# Backend + PostgreSQL only (Frontend deploys separately on Vercel)
+#
+# Deploy: docker compose -f docker-compose.prod.yml up -d --build
 # ─────────────────────────────────────────────────────────────
 
 services:
@@ -12,7 +14,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-memoirfinance}
       POSTGRES_USER: ${POSTGRES_USER:-memoir}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-memoir}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -26,20 +28,36 @@ services:
 
   # ── Backend API ─────────────────────────────────────────────
   backend:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-memoir}/memoir-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: memoir_backend
     restart: always
-    env_file:
-      - path: .env
-        required: true
     environment:
       APP_ENV: production
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoir}:${POSTGRES_PASSWORD:-CHANGE_ME}@postgres:5432/${POSTGRES_DB:-memoirfinance}
+      APP_SECRET_KEY: ${APP_SECRET_KEY}
+      CORS_ORIGINS: "https://testduc.io.vn,https://api.testduc.io.vn"
+      APP_BASE_URL: https://api.testduc.io.vn
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoir}:${POSTGRES_PASSWORD:-memoir}@postgres:5432/${POSTGRES_DB:-memoirfinance}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-memoirfinance}
       DB_USER: ${POSTGRES_USER:-memoir}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-memoir}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY}
+      AI_PROVIDER: gemini
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 30s
@@ -51,18 +69,8 @@ services:
         condition: service_healthy
     networks:
       - memoir
-
-  # ── Frontend (Nginx) ────────────────────────────────────────
-  # Note: Nginx proxies /api/* to backend, serves static files for everything else
-  frontend:
-    image: ${DOCKER_REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-memoir}/memoir-frontend:latest
-    container_name: memoir_frontend
-    restart: always
-    # No direct port exposure — serve behind nginx or Cloudflare Proxy
-    depends_on:
-      - backend
-    networks:
-      - memoir
+    ports:
+      - "8000:8000"
 
 volumes:
   postgres_data:
@@ -71,3 +79,4 @@ volumes:
 networks:
   memoir:
     driver: bridge
+ii

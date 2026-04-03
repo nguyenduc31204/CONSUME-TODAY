@@ -107,32 +107,8 @@ def _enrich_tx(t, wallets: dict[UUID, str], categories: dict[UUID, str]) -> dict
 
 def _image_proxy_url(r2_url: str | None) -> str | None:
     """
-    Convert R2 URLs to proxy endpoint paths.
-
-    Handles two R2 URL formats:
-      1. Custom domain: https://pub-xxx.r2.dev/images/...     (preferred)
-      2. Account domain: https://<account-id>.r2.cloudflarestorage.com/images/...
-
-    Both are private and require server-side proxy → /api/v1/images/proxy/<path>
+    Return R2 image URL as-is. R2 bucket is public so no proxy needed.
     """
-    if not r2_url:
-        return None
-
-    settings = get_settings()
-
-    # Format 1: custom domain (e.g. https://pub-xxx.r2.dev/)
-    custom = settings.r2_public_url.rstrip("/")
-    if r2_url.startswith(custom):
-        relative_path = r2_url[len(custom) + 1 :]
-        return f"/api/v1/images/proxy/{relative_path}"
-
-    # Format 2: account-level domain (e.g. https://<account-id>.r2.cloudflarestorage.com/)
-    account_domain = f"https://{settings.r2_account_id}.r2.cloudflarestorage.com/"
-    if r2_url.startswith(account_domain):
-        relative_path = r2_url[len(account_domain) :]
-        return f"/api/v1/images/proxy/{relative_path}"
-
-    # Unknown format — return as-is (custom CDN or public URL)
     return r2_url
 
 
