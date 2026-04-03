@@ -183,7 +183,7 @@ jobs:
           envs: github.sha,github.repository_owner
           script: |
             set -e
-            APP_DIR="${{ vars.BACKEND_SSH_PATH || '/opt/memoir' }}"
+            APP_DIR="/opt/CONSUME-TODAY"
             REGISTRY="docker.io/${{ secrets.DOCKER_USERNAME }}"
             NEW_IMAGE="${REGISTRY}/memoir-backend:${{ github.sha }}"
 
@@ -193,23 +193,7 @@ jobs:
             echo "📦 Pulling new backend image..."
             docker pull "${NEW_IMAGE}"
 
-            echo "📝 Updating docker-compose.prod.yml..."
-            python3 << 'PYEOF'
-import re
-with open('/opt/CONSUME-TODAY/docker-compose.prod.yml', 'r') as f:
-    content = f.read()
-content = re.sub(
-    r'^\s+build:\n\s+context: \./backend\n\s+dockerfile: Dockerfile',
-    '    image: docker.io/REPLACEME\n    # build: (commented - managed by CI)',
-    content,
-    flags=re.MULTILINE
-)
-with open('/opt/CONSUME-TODAY/docker-compose.prod.yml', 'w') as f:
-    f.write(content)
-PYEOF
-            sed -i "s|REPLACEME|${REGISTRY}/memoir-backend:${{ github.sha }}|" /opt/CONSUME-TODAY/docker-compose.prod.yml
-
-            echo "🚀 Restarting backend..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps backend
+            echo "🚀 Restarting backend with new image..."
+            BACKEND_IMAGE="${NEW_IMAGE}" docker compose -f docker-compose.prod.yml up -d --no-deps backend
 
             echo "✅ Backend deployed! SHA: ${{ github.sha }}"

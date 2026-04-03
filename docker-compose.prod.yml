@@ -28,9 +28,7 @@ services:
 
   # ── Backend API ─────────────────────────────────────────────
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${BACKEND_IMAGE}
     container_name: memoir_backend
     restart: always
     environment:
