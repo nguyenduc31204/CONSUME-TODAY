@@ -1,17 +1,16 @@
 """
-OCR Routes — AI-powered receipt and image analysis via Claude API.
+OCR Routes — AI-powered receipt and image analysis via Gemini API (free) or Claude API.
 """
-import io
+
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, UploadFile, File, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 
-from src.infrastructure.adapters.driven.database import get_db
-from src.infrastructure.adapters.driven.claude_ocr import ClaudeOcrAdapter
+from src.application.dtos.response.ocr_dto import OcrCategoryResult, OcrResultResponse
+from src.config import get_settings
+from src.infrastructure.adapters.driven.gemini_ocr import GeminiOcrAdapter
 from src.infrastructure.adapters.driven.jwt_service import JWTService
 from src.infrastructure.shared.exceptions import ForbiddenException
-from src.application.dtos.response.ocr_dto import OcrResultResponse, OcrCategoryResult
 
 router = APIRouter()
 
@@ -52,8 +51,16 @@ async def analyze_image(
     if not contents:
         raise HTTPException(status_code=400, detail="Empty file.")
 
-    # Run OCR
-    adapter = ClaudeOcrAdapter()
+    # Run OCR via Gemini (free tier, gemini-2.5-flash)
+    settings = get_settings()
+    if not settings.google_gemini_api_key or settings.google_gemini_api_key.startswith(
+        "your_"
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Gemini API key not configured. Set GOOGLE_GEMINI_API_KEY in .env",
+        )
+    adapter = GeminiOcrAdapter()
     ocr_result = await adapter.analyze_image(
         contents,
         source_type="base64",
@@ -61,6 +68,7 @@ async def analyze_image(
 
     # Map category
     from src.domain.services.ocr_domain_service import CategoryMapper
+
     category_display = CategoryMapper.map_key_to_display_name(ocr_result.category_key)
 
     category_info = None

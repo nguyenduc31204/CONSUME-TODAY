@@ -18,6 +18,8 @@ class StoragePort:
         """Delete an image from object storage."""
         raise NotImplementedError
 
-    async def generate_presigned_url(self, storage_key: str, expires_in: int = 3600) -> str:
+    async def generate_presigned_url(
+        self, storage_key: str, expires_in: int = 3600
+    ) -> str:
         """Generate a presigned URL for direct upload."""
         raise NotImplementedError

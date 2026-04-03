@@ -38,7 +38,7 @@ file: <image_file>
 }
 ```
 
-### S3 Adapter
+### Cloudflare R2 Adapter
 
 **`IStoragePort` interface:**
 ```python

@@ -2,13 +2,12 @@
 WalletRepositoryImpl — SQLAlchemy async implementation of WalletRepository.
 Driven adapter: persistence.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from src.domain.entities.wallet import Wallet
 from src.domain.repositories.wallet_repository import WalletRepository
@@ -31,12 +30,15 @@ class WalletRepositoryImpl(WalletRepository):
             icon=model.icon,
             is_default=model.is_default,
             is_personal=model.is_personal,
+            balance=model.balance,
             created_at=model.created_at,
             updated_at=model.updated_at,
             deleted_at=model.deleted_at,
         )
 
-    def _to_model(self, entity: Wallet, model: Optional[WalletModel] = None) -> WalletModel:
+    def _to_model(
+        self, entity: Wallet, model: WalletModel | None = None
+    ) -> WalletModel:
         if model is None:
             model = WalletModel()
         model.id = entity.id
@@ -47,6 +49,7 @@ class WalletRepositoryImpl(WalletRepository):
         model.icon = entity.icon
         model.is_default = entity.is_default
         model.is_personal = entity.is_personal
+        model.balance = entity.balance
         model.created_at = entity.created_at
         model.updated_at = entity.updated_at
         model.deleted_at = entity.deleted_at
@@ -59,7 +62,7 @@ class WalletRepositoryImpl(WalletRepository):
         await self._session.refresh(model)
         return self._to_entity(model)
 
-    async def get_by_id(self, wallet_id: UUID) -> Optional[Wallet]:
+    async def get_by_id(self, wallet_id: UUID) -> Wallet | None:
         stmt = select(WalletModel).where(
             WalletModel.id == wallet_id,
             WalletModel.deleted_at.is_(None),
@@ -80,10 +83,10 @@ class WalletRepositoryImpl(WalletRepository):
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def get_default(self, user_id: UUID) -> Optional[Wallet]:
+    async def get_default(self, user_id: UUID) -> Wallet | None:
         stmt = select(WalletModel).where(
             WalletModel.user_id == user_id,
-            WalletModel.is_default == True,
+            WalletModel.is_default,
             WalletModel.deleted_at.is_(None),
         )
         result = await self._session.execute(stmt)
@@ -99,6 +102,7 @@ class WalletRepositoryImpl(WalletRepository):
                 description=wallet.description,
                 color=wallet.color,
                 icon=wallet.icon,
+                balance=wallet.balance,
                 is_default=wallet.is_default,
                 is_personal=wallet.is_personal,
                 updated_at=datetime.utcnow(),

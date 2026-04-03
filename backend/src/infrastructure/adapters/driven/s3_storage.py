@@ -6,6 +6,7 @@ Storage key conventions:
   images/{user_id}/{uuid}.{ext}
   thumbnails/{user_id}/{uuid}_thumb.jpg
 """
+
 import hashlib
 import io
 from concurrent.futures import ThreadPoolExecutor
@@ -13,7 +14,6 @@ from datetime import datetime
 from uuid import uuid4
 
 import boto3
-from botocore.exceptions import ClientError
 from PIL import Image as PILImage
 
 from src.config import get_settings
@@ -291,3 +291,132 @@ class R2StorageAdapter:
             )
 
         return await loop.run_in_executor(_executor, _do)
+
+    async def get_object(self, storage_key: str) -> bytes:
+        """Get image bytes from R2 (used by image proxy endpoint)."""
+        loop = __import__("asyncio").get_running_loop()
+
+        def _do() -> bytes:
+            response = self.client.get_object(
+                Bucket=self.settings.r2_bucket_name,
+                Key=storage_key,
+            )
+            return response["Body"].read()
+
+        return await loop.run_in_executor(_executor, _do)
+
+    async def get_content_type(self, storage_key: str) -> str:
+        """Get Content-Type header for a stored object."""
+        loop = __import__("asyncio").get_running_loop()
+
+        def _do() -> str:
+            response = self.client.head_object(
+                Bucket=self.settings.r2_bucket_name,
+                Key=storage_key,
+            )
+            return response.get("ContentType", "image/jpeg")
+
+        return await loop.run_in_executor(_executor, _do)
+
+    async def upload_avatar(
+        self,
+        user_id: str,
+        file_bytes: bytes,
+        filename: str,
+    ) -> dict:
+        """
+        Upload a user avatar to R2.
+        - Crops to square (center-crop)
+        - Resizes to 256x256 (small, fast-loading)
+        - Converts to JPEG
+        Returns dict with url and storage_key.
+        """
+        loop = __import__("asyncio").get_running_loop()
+
+        def _process():
+            img = PILImage.open(io.BytesIO(file_bytes))
+
+            # Auto-orient
+            try:
+                exif = img.getexif()
+                orientation = exif.get(0x0112)
+                if orientation == 2:
+                    img = img.transpose(PILImage.FLIP_LEFT_RIGHT)
+                elif orientation == 3:
+                    img = img.rotate(180, expand=True)
+                elif orientation == 4:
+                    img = img.transpose(PILImage.FLIP_TOP_BOTTOM)
+                elif orientation == 5:
+                    img = img.transpose(PILImage.FLIP_LEFT_RIGHT).rotate(
+                        90, expand=True
+                    )
+                elif orientation == 6:
+                    img = img.rotate(270, expand=True)
+                elif orientation == 7:
+                    img = img.transpose(PILImage.FLIP_LEFT_RIGHT).rotate(
+                        270, expand=True
+                    )
+                elif orientation == 8:
+                    img = img.rotate(90, expand=True)
+            except Exception:
+                pass
+
+            # Square center-crop
+            width, height = img.size
+            min_dim = min(width, height)
+            left = (width - min_dim) // 2
+            top = (height - min_dim) // 2
+            img = img.crop((left, top, left + min_dim, top + min_dim))
+
+            # Convert to RGB
+            if img.mode in ("RGBA", "P", "LA"):
+                rgb = PILImage.new("RGB", img.size, (255, 255, 255))
+                rgb.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+                img = rgb
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+
+            # Resize to 256x256
+            img = img.resize((256, 256), PILImage.LANCZOS)
+
+            # Save as JPEG
+            output = io.BytesIO()
+            img.save(output, format="JPEG", quality=80, optimize=True)
+            return output.getvalue()
+
+        avatar_bytes = await loop.run_in_executor(_executor, _process)
+
+        # Generate key: avatars/user_id/avatar.jpg (always overwrite)
+        storage_key = f"avatars/{user_id}/avatar.jpg"
+
+        def _upload():
+            self.client.put_object(
+                Bucket=self.settings.r2_bucket_name,
+                Key=storage_key,
+                Body=avatar_bytes,
+                ContentType="image/jpeg",
+                CacheControl="public, max-age=31536000",
+            )
+
+        await loop.run_in_executor(_executor, _upload)
+
+        avatar_url = f"{self.settings.r2_public_url}/{storage_key}"
+        logger.info(f"Avatar uploaded: {avatar_url} ({len(avatar_bytes)//1024}KB)")
+
+        return {
+            "url": avatar_url,
+            "storage_key": storage_key,
+        }
+
+    async def delete_avatar(self, storage_key: str) -> None:
+        """Delete an avatar from R2."""
+        loop = __import__("asyncio").get_running_loop()
+
+        def _do():
+            self.client.delete_object(
+                Bucket=self.settings.r2_bucket_name,
+                Key=storage_key,
+            )
+
+        await loop.run_in_executor(_executor, _do)
+        logger.info(f"Avatar deleted: {storage_key}")

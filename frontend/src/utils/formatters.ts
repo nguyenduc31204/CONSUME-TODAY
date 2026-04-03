@@ -33,13 +33,25 @@ export function formatVNDCompact(amount: number): string {
 /**
  * Format a date to Vietnamese date string.
  * Example: "2026-04-01" → "01/04/2026"
+ *
+ * API returns naive datetimes (no TZ suffix). When passed to new Date(),
+ * JS treats them as UTC which can shift to previous day in UTC+7.
+ * We parse YYYY-MM-DD strings directly to avoid this.
  */
 export function formatDate(date: string | Date): string {
+  let d: Date
+  if (typeof date === 'string' && date.length === 10) {
+    // YYYY-MM-DD only
+    const [y, mo, day] = date.split('-').map(Number)
+    d = new Date(y, mo - 1, day)
+  } else {
+    d = new Date(date)
+  }
   return new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 /**
@@ -47,10 +59,19 @@ export function formatDate(date: string | Date): string {
  * Example: "2026-04-01T12:30:00" → "12:30"
  */
 export function formatTime(date: string | Date): string {
+  let d: Date
+  if (typeof date === 'string' && !date.endsWith('Z') && date.includes('T')) {
+    const [ymd, hms] = date.split('T')
+    const [y, mo, day] = ymd.split('-').map(Number)
+    const [h, mi] = hms.split(':').map(Number)
+    d = new Date(y, mo - 1, day, h ?? 0, mi ?? 0)
+  } else {
+    d = new Date(date)
+  }
   return new Intl.DateTimeFormat('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(date))
+  }).format(d)
 }
 
 /**
@@ -62,10 +83,24 @@ export function formatDateTime(date: string | Date): string {
 
 /**
  * Format a date to relative time (e.g. "2 phút trước", "Hôm nay").
+ * API returns naive datetimes (no TZ suffix), so parse them as local time
+ * to avoid JS shifting them to the previous day.
  */
 export function formatRelativeTime(date: string | Date): string {
   const now = new Date()
-  const then = new Date(date)
+
+  // If date is a naive ISO string without TZ suffix (e.g. "2026-04-02T06:44:28"),
+  // construct Date from parts to avoid UTC-shift. Otherwise fall back to Date().
+  let then: Date
+  if (typeof date === 'string' && !date.endsWith('Z') && date.includes('T')) {
+    const [ymd, hms] = date.split('T')
+    const [y, mo, d] = ymd.split('-').map(Number)
+    const [h, mi, s] = hms.split(/[.:]/).map(Number)
+    then = new Date(y, mo - 1, d, h ?? 0, mi ?? 0, s ?? 0)
+  } else {
+    then = new Date(date)
+  }
+
   const diffMs = now.getTime() - then.getTime()
   const diffSec = Math.floor(diffMs / 1000)
   const diffMin = Math.floor(diffSec / 60)
@@ -82,8 +117,11 @@ export function formatRelativeTime(date: string | Date): string {
 }
 
 /**
- * Get today's date as YYYY-MM-DD string.
+ * Get today's date as YYYY-MM-DD string in local timezone (Vietnam: UTC+7).
  */
 export function todayISO(): string {
-  return new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const offset = now.getTimezoneOffset()
+  const local = new Date(now.getTime() - offset * 60 * 1000)
+  return local.toISOString().split('T')[0]
 }

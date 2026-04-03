@@ -2,8 +2,8 @@
 ImageRepositoryImpl — SQLAlchemy async implementation of ImageRepository.
 Driven adapter: persistence.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -37,7 +37,7 @@ class ImageRepositoryImpl(ImageRepository):
             deleted_at=model.deleted_at,
         )
 
-    def _to_model(self, entity: Image, model: Optional[ImageModel] = None) -> ImageModel:
+    def _to_model(self, entity: Image, model: ImageModel | None = None) -> ImageModel:
         if model is None:
             model = ImageModel()
         model.id = entity.id
@@ -62,7 +62,7 @@ class ImageRepositoryImpl(ImageRepository):
         await self._session.refresh(model)
         return self._to_entity(model)
 
-    async def get_by_id(self, image_id: UUID) -> Optional[Image]:
+    async def get_by_id(self, image_id: UUID) -> Image | None:
         stmt = select(ImageModel).where(
             ImageModel.id == image_id,
             ImageModel.deleted_at.is_(None),

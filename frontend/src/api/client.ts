@@ -3,6 +3,11 @@ import type { ApiResponse } from '@/types/api'
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
 
+/** Navigates to login page after token expiry */
+function _redirectToLogin() {
+  window.location.href = '/login'
+}
+
 /**
  * Generic fetch-based API client.
  * All methods return the standard { success, data, message } envelope.
@@ -16,7 +21,17 @@ export class ApiClient {
   }
 
   private _getToken(): string | null {
-    return useAuthStore.getState().accessToken
+    const state = useAuthStore.getState()
+    // Silently redirect to login if token is expired (with buffer)
+    if (!state.isTokenValid()) {
+      if (state.accessToken) {
+        // Token was stored but is now expired — force logout
+        state.logout()
+        _redirectToLogin()
+      }
+      return null
+    }
+    return state.accessToken
   }
 
   private async request<T>(
@@ -42,6 +57,18 @@ export class ApiClient {
         ...options,
         headers,
       })
+
+      // 401 — token invalid or expired on the server side
+      if (response.status === 401) {
+        const { logout } = useAuthStore.getState()
+        logout()
+        _redirectToLogin()
+        return {
+          success: false,
+          data: null,
+          message: 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.',
+        }
+      }
 
       const data: ApiResponse<T> = await response.json()
       return data
@@ -114,7 +141,21 @@ export class ApiClient {
         body: formData,
         headers,
       })
-      return await response.json()
+
+      // 401 — token invalid or expired on the server side
+      if (response.status === 401) {
+        const { logout } = useAuthStore.getState()
+        logout()
+        _redirectToLogin()
+        return {
+          success: false,
+          data: null,
+          message: 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.',
+        } as ApiResponse<T>
+      }
+
+      const data: ApiResponse<T> = await response.json()
+      return data
     } catch (err) {
       return {
         success: false,

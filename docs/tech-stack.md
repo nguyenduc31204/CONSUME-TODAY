@@ -251,12 +251,18 @@ docker compose up -d postgres
 
 ---
 
-## Deployment (TBD)
+## Deployment
 
-> Chưa xác định — cần confirm sau khi MVP hoàn thành.
+> Chi tiết đầy đủ: **`docs/PHASE-06.md`**
 
-Gợi ý:
-- **FE:** Vercel / Cloudflare Pages
-- **BE:** Railway / Render / Fly.io / Self-hosted
-- **DB:** Managed PostgreSQL (Neon, Supabase, Railway) hoặc self-hosted
-- **R2:** Cloudflare R2 + Cloudflare Images/Workers
+### Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Frontend Hosting | Nginx (Docker) hoặc Cloudflare Pages |
+| Backend Hosting | Railway / Render / Fly.io / VPS self-hosted |
+| Database | Self-hosted PostgreSQL 16 hoặc managed (Neon, Supabase, Railway) |
+| Image Storage | Cloudflare R2 + CDN |
+| CI/CD | GitHub Actions |
+| Monitoring | Loguru + Sentry |
+| SSL | Cloudflare Origin Certificate hoặc Let's Encrypt |

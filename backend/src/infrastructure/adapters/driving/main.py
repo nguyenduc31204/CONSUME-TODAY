@@ -2,19 +2,20 @@
 MemoirFinance — FastAPI Application Entry Point.
 Driving adapter: HTTP API, CORS, Exception Handling, Lifespan.
 """
+
+import json
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
 
 from src.config import get_settings
-from src.infrastructure.adapters.driven.database import engine, Base, AsyncSessionLocal
-from src.infrastructure.shared.loguru_config import configure_loguru, get_logger
+from src.infrastructure.adapters.driven.database import Base, engine
 from src.infrastructure.shared.exceptions import AppException
+from src.infrastructure.shared.loguru_config import configure_loguru, get_logger
 
 # Configure logging once at startup
 configure_loguru()
@@ -49,7 +50,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 # ── API Response Helpers ────────────────────────────────────
 
-def success_response(data=None, message: str = "", status_code: int = 200) -> JSONResponse:
+
+def success_response(
+    data=None, message: str = "", status_code: int = 200
+) -> JSONResponse:
     """Standard API response envelope: { success, data, message }."""
     return JSONResponse(
         status_code=status_code,
@@ -61,7 +65,9 @@ def success_response(data=None, message: str = "", status_code: int = 200) -> JS
     )
 
 
-def error_response(message: str, code: str = "APP_ERROR", details: dict = None, status_code: int = 500) -> JSONResponse:
+def error_response(
+    message: str, code: str = "APP_ERROR", details: dict = None, status_code: int = 500
+) -> JSONResponse:
     """Standard error response."""
     return JSONResponse(
         status_code=status_code,
@@ -100,6 +106,7 @@ app.add_middleware(
 
 # ── Global Exception Handlers ──────────────────────────────
 
+
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     """Handle business exceptions."""
@@ -113,13 +120,20 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Handle Pydantic validation errors (400/422)."""
     logger.warning(f"Validation error: {exc.errors()}")
+    # exc.errors() may contain raw Python objects (UUID, bytes, etc.) — serialize to JSON-safe dict
+    try:
+        errors = json.loads(exc.json())
+    except Exception:
+        errors = str(exc.errors())
     return error_response(
         message="Validation failed",
         code="ERR_VALIDATION",
-        details={"errors": exc.errors()},
+        details={"errors": errors},
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
     )
 
@@ -137,6 +151,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
 
 # ── Health Check ───────────────────────────────────────────
 
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint for Docker/load balancer."""
@@ -144,9 +159,20 @@ async def health_check():
 
 
 # ── Include Routers ────────────────────────────────────────
+# noqa: E402 — routers must be imported after app is created to avoid circular imports
 
-from src.infrastructure.adapters.driving.routes import transactions, wallets, categories, images, ocr
-from src.infrastructure.adapters.driving.auth.routes import router as auth_router
+from src.infrastructure.adapters.driving.auth.routes import (
+    router as auth_router,  # noqa: E402
+)
+from src.infrastructure.adapters.driving.routes import (  # noqa: E402
+    categories,
+    images,
+    ocr,
+    reports,
+    transactions,
+    users,
+    wallets,
+)
 
 api_prefix = "/api/v1"
 
@@ -181,6 +207,18 @@ app.include_router(
 )
 
 app.include_router(
+    reports.router,
+    prefix=api_prefix,
+    tags=["Reports"],
+)
+
+app.include_router(
+    users.router,
+    prefix=api_prefix,
+    tags=["Users"],
+)
+
+app.include_router(
     auth_router,
     prefix=api_prefix,
     tags=["Auth"],
@@ -188,6 +226,7 @@ app.include_router(
 
 
 # ── Root ───────────────────────────────────────────────────
+
 
 @app.get("/", tags=["Root"])
 async def root():

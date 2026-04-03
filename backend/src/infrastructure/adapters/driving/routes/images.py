@@ -1,20 +1,28 @@
 """
 Image Routes — Upload, retrieve, and delete images with R2 storage.
 """
+
+from concurrent.futures import ThreadPoolExecutor
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, UploadFile, File, HTTPException
+from botocore.exceptions import ClientError
+from fastapi import APIRouter, Cookie, Depends, File, Header, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.application.dtos.response.image_dto import ImageResponse
 from src.domain.entities.image import Image
 from src.infrastructure.adapters.driven.database import get_db
 from src.infrastructure.adapters.driven.image_repository_impl import ImageRepositoryImpl
 from src.infrastructure.adapters.driven.jwt_service import JWTService
 from src.infrastructure.adapters.driven.s3_storage import R2StorageAdapter
 from src.infrastructure.shared.exceptions import ForbiddenException, NotFoundException
-from src.application.dtos.response.image_dto import ImageResponse
+from src.infrastructure.shared.loguru_config import get_logger
+
+logger = get_logger()
 
 router = APIRouter()
+
+_executor = ThreadPoolExecutor(max_workers=4)
 
 
 def _get_user_id(authorization: str = Header(...)) -> UUID:
@@ -24,6 +32,27 @@ def _get_user_id(authorization: str = Header(...)) -> UUID:
     user_id = JWTService().verify_access_token(token)
     if user_id is None:
         raise ForbiddenException(message="Invalid access token.")
+    return user_id
+
+
+def _get_user_id_header_or_cookie(
+    authorization: str | None = Header(None, alias="Authorization"),
+    memoir_token: str | None = Cookie(None, alias="memoir_token"),
+) -> UUID:
+    """
+    Read JWT from Authorization header OR memoir_token cookie.
+    <img> tags cannot send custom headers, so the frontend stores the token
+    in a HttpOnly cookie and the browser automatically sends it with requests
+    to the same origin.
+    """
+    raw_token = authorization or memoir_token
+    if not raw_token:
+        raise ForbiddenException(message="Missing authentication token.")
+    if raw_token.startswith("Bearer "):
+        raw_token = raw_token[7:]
+    user_id = JWTService().verify_access_token(raw_token)
+    if user_id is None:
+        raise ForbiddenException(message="Invalid or expired token.")
     return user_id
 
 
@@ -96,6 +125,77 @@ async def upload_image(
     }
 
 
+@router.get("/images/proxy/{path:path}")
+async def proxy_image(
+    path: str,
+    user_id: UUID = Depends(_get_user_id_header_or_cookie),
+):
+    """
+    Proxy endpoint: browser → backend → R2.
+    Reads JWT from Authorization header OR memoir_token cookie
+    (<img> tags cannot send custom headers, but cookies work automatically).
+    """
+    # Path traversal guard
+    if ".." in path or path.startswith("/"):
+        raise HTTPException(status_code=400, detail="Invalid path.")
+
+    storage = R2StorageAdapter()
+    image_bytes, content_type = await _fetch_image_bytes(storage, path)
+
+    from fastapi.responses import Response
+
+    return Response(
+        content=image_bytes,
+        media_type=content_type,
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "Content-Length": str(len(image_bytes)),
+        },
+    )
+
+
+async def _fetch_image_bytes(storage: R2StorageAdapter, path: str) -> tuple[bytes, str]:
+    """Fetch image bytes from R2. Falls back to thumbnail on NoSuchKey."""
+    loop = __import__("asyncio").get_running_loop()
+
+    def _do() -> tuple[bytes, str]:
+        try:
+            response = storage.client.get_object(
+                Bucket=storage.settings.r2_bucket_name,
+                Key=path,
+            )
+            body = response["Body"].read()
+            content_type = response.get("ContentType", "image/jpeg")
+            return body, content_type
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            logger.warning(f"R2 get_object failed for '{path}': {code}")
+            if code == "NoSuchKey":
+                # Try thumbnail fallback: images/... → thumbnails/...
+                if path.startswith("images/"):
+                    thumb_path = "thumbnails/" + path[7:]
+                    parts = thumb_path.rsplit(".", 1)
+                    thumb_path = parts[0] + "_thumb.jpg"
+                    try:
+                        response = storage.client.get_object(
+                            Bucket=storage.settings.r2_bucket_name,
+                            Key=thumb_path,
+                        )
+                        body = response["Body"].read()
+                        return body, "image/jpeg"
+                    except ClientError:
+                        pass  # Fall through to raise original
+            elif code in ("InvalidArgument", "AccessDenied", "AuthorizationError"):
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"R2 bucket '{storage.settings.r2_bucket_name}' is private or credentials are invalid. "
+                    f"Please enable public access at https://dash.cloudflare.com → R2 → Object Storage.",
+                )
+            raise
+
+    return await loop.run_in_executor(_executor, _do)
+
+
 @router.get("/images/{image_id}")
 async def get_image(
     image_id: UUID,
@@ -111,7 +211,11 @@ async def get_image(
     if image.user_id != user_id:
         raise ForbiddenException(message="You do not have access to this image.")
 
-    return {"success": True, "data": ImageResponse.model_validate(image).model_dump(), "message": ""}
+    return {
+        "success": True,
+        "data": ImageResponse.model_validate(image).model_dump(),
+        "message": "",
+    }
 
 
 @router.delete("/images/{image_id}")

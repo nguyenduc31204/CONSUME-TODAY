@@ -13,6 +13,7 @@ export interface OcrResult {
   amount: number | null
   currency: string
   date: string | null
+  note: string | null
   category: OcrCategoryResult | null
   is_life_log: boolean
   confidence: number
@@ -50,6 +51,7 @@ export interface TransactionForEdit {
   note: string | null
   ocr_confidence: number
   is_life_log: boolean
+  is_income: boolean
   transaction_status: string
   created_at: string
   updated_at: string

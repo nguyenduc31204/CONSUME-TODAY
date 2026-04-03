@@ -1,0 +1,30 @@
+# MemoirFinance — Ruff configuration for backend
+# https://docs.astral.sh/ruff/
+
+target-version = "py312"
+
+[lint]
+# E402: module-level import not at top (needed for FastAPI router imports)
+# UP007: use X | None instead of Optional[X] — planned migration, not blocking
+# E501: line too long — docstrings + prompts make long lines unavoidable
+# B008: Depends in argument defaults — standard FastAPI pattern
+ignore = ["E402", "UP007", "E501", "B008", "B007", "B904"]
+
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # warnings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-builtins
+    "C4",   # flake8-comprehensions
+]
+
+[lint.isort]
+known-first-party = ["src"]
+force-single-line = false
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

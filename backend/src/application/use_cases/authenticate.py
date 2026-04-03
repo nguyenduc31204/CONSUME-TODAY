@@ -1,16 +1,17 @@
 """
 AuthenticateUseCase — Social login, email/password auth + JWT management.
 """
+
 from uuid import UUID
 
+from src.domain.entities.category import DEFAULT_CATEGORIES, Category
 from src.domain.entities.user import User
 from src.domain.entities.wallet import Wallet
-from src.domain.entities.category import Category, DEFAULT_CATEGORIES
+from src.domain.repositories.category_repository import CategoryRepository
 from src.domain.repositories.user_repository import UserRepository
 from src.domain.repositories.wallet_repository import WalletRepository
-from src.domain.repositories.category_repository import CategoryRepository
+from src.infrastructure.adapters.driven.google_oauth_service import GoogleOAuthService
 from src.infrastructure.adapters.driven.jwt_service import JWTService
-from src.infrastructure.adapters.driven.google_oauth_service import GoogleOAuthService, GoogleUserInfo
 from src.infrastructure.adapters.driven.password_service import PasswordService
 
 
@@ -89,6 +90,7 @@ class AuthenticateUseCase:
         user_id = self._jwt.verify_refresh_token(refresh_token)
         if user_id is None:
             from src.infrastructure.shared.exceptions import UnauthorizedException
+
             raise UnauthorizedException(
                 message="Invalid or expired refresh token.",
                 code="ERR_INVALID_REFRESH_TOKEN",
@@ -97,6 +99,7 @@ class AuthenticateUseCase:
         user = await self._user_repo.get_by_id(user_id)
         if user is None or not user.is_active:
             from src.infrastructure.shared.exceptions import UnauthorizedException
+
             raise UnauthorizedException(
                 message="User not found or deactivated.",
                 code="ERR_USER_INACTIVE",
@@ -109,6 +112,7 @@ class AuthenticateUseCase:
         user = await self._user_repo.get_by_id(user_id)
         if user is None or not user.is_active:
             from src.infrastructure.shared.exceptions import UnauthorizedException
+
             raise UnauthorizedException(
                 message="User not found or deactivated.",
                 code="ERR_USER_INACTIVE",
@@ -157,7 +161,10 @@ class AuthenticateUseCase:
         Returns (user, access_token, refresh_token).
         Raises ConflictException if email already exists.
         """
-        from src.infrastructure.shared.exceptions import ConflictException, ValidationException
+        from src.infrastructure.shared.exceptions import (
+            ConflictException,
+            ValidationException,
+        )
 
         if not email or "@" not in email:
             raise ValidationException(message="Invalid email address.")
@@ -188,7 +195,9 @@ class AuthenticateUseCase:
         access_token, refresh_token = self._jwt.create_token_pair(user.id)
         return user, access_token, refresh_token
 
-    async def login_with_email(self, email: str, password: str) -> tuple[User, str, str]:
+    async def login_with_email(
+        self, email: str, password: str
+    ) -> tuple[User, str, str]:
         """
         Authenticate user with email + password.
         Returns (user, access_token, refresh_token).
@@ -201,7 +210,9 @@ class AuthenticateUseCase:
 
         user = await self._user_repo.get_by_email(email.lower().strip())
         if user is None or not user.is_active:
-            raise UnauthorizedException(message="Invalid email or password.", code="ERR_INVALID_CREDENTIALS")
+            raise UnauthorizedException(
+                message="Invalid email or password.", code="ERR_INVALID_CREDENTIALS"
+            )
 
         if user.hashed_password is None:
             raise UnauthorizedException(
@@ -210,7 +221,9 @@ class AuthenticateUseCase:
             )
 
         if not PasswordService.verify(password, user.hashed_password):
-            raise UnauthorizedException(message="Invalid email or password.", code="ERR_INVALID_CREDENTIALS")
+            raise UnauthorizedException(
+                message="Invalid email or password.", code="ERR_INVALID_CREDENTIALS"
+            )
 
         access_token, refresh_token = self._jwt.create_token_pair(user.id)
         return user, access_token, refresh_token

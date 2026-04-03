@@ -485,6 +485,6 @@ Màn hình chi tiết transaction — xem, sửa, xóa, thêm chi phí vào Life
 
 ### Phase tiếp theo
 
-**Phase 5: Reports + Polish** — "Nhìn lại" charts, Profile/Settings, deploy-ready
+**Phase 5: Reports + Polish** — "Nhìn lại" charts, Profile/Settings, UX polish
 
 Xem: `docs/PHASE-05.md`

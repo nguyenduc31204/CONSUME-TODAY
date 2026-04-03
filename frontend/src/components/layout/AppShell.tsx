@@ -4,6 +4,8 @@ import { BottomNav } from './BottomNav'
 import { ToastContainer } from '@/components/ui/Toast'
 import { CardPopup } from '@/components/common/CardPopup'
 import { useUpload } from '@/hooks/useUpload'
+import { useAuthStore } from '@/stores/authStore'
+import { useUiStore } from '@/stores/uiStore'
 
 interface AppShellProps {
   children: ReactNode
@@ -22,6 +24,10 @@ export function AppShell({ children }: AppShellProps) {
   // Listen for camera events from BottomNav
   useEffect(() => {
     const handler = (e: Event) => {
+      if (!useAuthStore.getState().accessToken) {
+        useUiStore.getState().addToast('Vui lòng đăng nhập để chụp ảnh', 'warning')
+        return
+      }
       const customEvent = e as CustomEvent<{ file: File }>
       triggerUpload(customEvent.detail.file)
     }

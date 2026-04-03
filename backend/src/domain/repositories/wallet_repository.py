@@ -1,8 +1,8 @@
 """
 WalletRepository — Abstract interface for Wallet persistence.
 """
+
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
 
 from src.domain.entities.wallet import Wallet
@@ -19,7 +19,7 @@ class WalletRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_id(self, wallet_id: UUID) -> Optional[Wallet]:
+    async def get_by_id(self, wallet_id: UUID) -> Wallet | None:
         """Retrieve a wallet by UUID."""
         ...
 
@@ -29,7 +29,7 @@ class WalletRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_default(self, user_id: UUID) -> Optional[Wallet]:
+    async def get_default(self, user_id: UUID) -> Wallet | None:
         """Get the user's default wallet."""
         ...
 

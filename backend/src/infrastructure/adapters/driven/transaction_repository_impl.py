@@ -2,11 +2,11 @@
 TransactionRepositoryImpl — SQLAlchemy async implementation of TransactionRepository.
 Driven adapter: persistence.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select, update, func, and_
+from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.transaction import Transaction
@@ -35,13 +35,16 @@ class TransactionRepositoryImpl(TransactionRepository):
             note=model.note,
             ocr_confidence=model.ocr_confidence,
             is_life_log=model.is_life_log,
+            is_income=model.is_income,
             transaction_status=model.transaction_status,
             created_at=model.created_at,
             updated_at=model.updated_at,
             deleted_at=model.deleted_at,
         )
 
-    def _to_model(self, entity: Transaction, model: Optional[TransactionModel] = None) -> TransactionModel:
+    def _to_model(
+        self, entity: Transaction, model: TransactionModel | None = None
+    ) -> TransactionModel:
         if model is None:
             model = TransactionModel()
         model.id = entity.id
@@ -57,6 +60,7 @@ class TransactionRepositoryImpl(TransactionRepository):
         model.note = entity.note
         model.ocr_confidence = entity.ocr_confidence
         model.is_life_log = entity.is_life_log
+        model.is_income = entity.is_income
         model.transaction_status = entity.transaction_status
         model.created_at = entity.created_at
         model.updated_at = entity.updated_at
@@ -70,7 +74,7 @@ class TransactionRepositoryImpl(TransactionRepository):
         await self._session.refresh(model)
         return self._to_entity(model)
 
-    async def get_by_id(self, transaction_id: UUID) -> Optional[Transaction]:
+    async def get_by_id(self, transaction_id: UUID) -> Transaction | None:
         stmt = select(TransactionModel).where(
             TransactionModel.id == transaction_id,
             TransactionModel.deleted_at.is_(None),
@@ -83,15 +87,18 @@ class TransactionRepositoryImpl(TransactionRepository):
         self,
         user_id: UUID,
         *,
-        wallet_id: Optional[UUID] = None,
-        category_id: Optional[UUID] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        wallet_id: UUID | None = None,
+        category_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         skip: int = 0,
         limit: int = 50,
     ) -> tuple[list[Transaction], int]:
         """List transactions with filters and total count."""
-        conditions = [TransactionModel.user_id == user_id, TransactionModel.deleted_at.is_(None)]
+        conditions = [
+            TransactionModel.user_id == user_id,
+            TransactionModel.deleted_at.is_(None),
+        ]
 
         if wallet_id:
             conditions.append(TransactionModel.wallet_id == wallet_id)
@@ -103,14 +110,19 @@ class TransactionRepositoryImpl(TransactionRepository):
             conditions.append(TransactionModel.transaction_date <= end_date)
 
         # Count
-        count_stmt = select(func.count()).select_from(TransactionModel).where(and_(*conditions))
+        count_stmt = (
+            select(func.count()).select_from(TransactionModel).where(and_(*conditions))
+        )
         total = (await self._session.execute(count_stmt)).scalar_one()
 
         # List
         list_stmt = (
             select(TransactionModel)
             .where(and_(*conditions))
-            .order_by(TransactionModel.transaction_date.desc().nullslast(), TransactionModel.created_at.desc())
+            .order_by(
+                TransactionModel.transaction_date.desc().nullslast(),
+                TransactionModel.created_at.desc(),
+            )
             .offset(skip)
             .limit(limit)
         )
@@ -134,6 +146,7 @@ class TransactionRepositoryImpl(TransactionRepository):
                 note=transaction.note,
                 ocr_confidence=transaction.ocr_confidence,
                 is_life_log=transaction.is_life_log,
+                is_income=transaction.is_income,
                 transaction_status=transaction.transaction_status,
                 updated_at=datetime.utcnow(),
             )

@@ -2,6 +2,7 @@
 Input Port — CaptureExpenseUseCase input interface.
 Driving adapters (FastAPI routes) call this.
 """
+
 from typing import Protocol
 from uuid import UUID
 

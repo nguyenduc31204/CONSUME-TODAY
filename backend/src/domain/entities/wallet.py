@@ -1,9 +1,10 @@
 """
 Wallet Entity — Represents a user's wallet (personal or shared).
 """
-from typing import Optional
-from src.domain.entities.base import BaseEntity
+
 from uuid import UUID
+
+from src.domain.entities.base import BaseEntity
 
 
 class Wallet(BaseEntity):
@@ -14,12 +15,13 @@ class Wallet(BaseEntity):
         *,
         user_id: UUID,
         name: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         color: str = "#9333EA",
         icon: str = "wallet",
         is_default: bool = False,
         is_personal: bool = True,
-        id: Optional[UUID] = None,
+        balance: int = 0,
+        id: UUID | None = None,
         created_at=None,
         updated_at=None,
         deleted_at=None,
@@ -37,7 +39,14 @@ class Wallet(BaseEntity):
         self.icon = icon
         self.is_default = is_default
         self.is_personal = is_personal
-        self.balance = 0  # Computed field, not authoritative
+        self.balance = balance
+
+    # ── Balance ───────────────────────────────────────────────
+
+    def adjust_balance(self, amount: int) -> None:
+        """Adjust wallet balance by amount (positive = add, negative = subtract)."""
+        self.balance += amount
+        self.touch()
 
     # ── Business Logic ─────────────────────────────────
 
@@ -60,4 +69,4 @@ class Wallet(BaseEntity):
         self.touch()
 
     def __repr__(self) -> str:
-        return f"<Wallet(id={self.id}, name={self.name}, default={self.is_default})>"
+        return f"<Wallet(id={self.id}, name={self.name}, balance={self.balance}, default={self.is_default})>"

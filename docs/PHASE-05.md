@@ -1,6 +1,6 @@
 # Phase 5: Reports + Polish
 
-**Mục tiêu:** Màn hình "Nhìn lại" (Reports), Profile/Settings, polish UX, và chuẩn bị deploy.
+**Mục tiêu:** Màn hình "Nhìn lại" (Reports), Profile/Settings, và hoàn thiện UX polish để đạt trải nghiệm hoàn chỉnh.
 
 **Phụ thuộc:** Phase 4 (Frontend Core hoàn chỉnh)
 
@@ -236,7 +236,7 @@ Màn hình "Cá nhân" — profile user, quản lý ví, quản lý danh mục, 
 |---|---|---|
 | Ngôn ngữ | Language preference | Tiếng Việt, English |
 | Tiền tệ | Currency display | VND (₫), USD ($) |
-| Thông báo | Push notifications (post-MVP) | Bật/Tắt |
+| Thông báo | Push notifications | Bật/Tắt |
 | Bảo mật | Password, 2FA | — |
 
 ---
@@ -313,113 +313,6 @@ Các chi tiết UX còn lại để đạt trải nghiệm hoàn chỉnh.
 
 ---
 
-## 5.4 — Deploy Configuration
-
-### Mục tiêu
-
-Chuẩn bị production configuration và CI/CD.
-
-### Docker Production Compose
-
-```yaml
-# docker-compose.prod.yml
-services:
-  postgres:
-    image: postgres:16-alpine
-    restart: always
-    volumes:
-      - postgres_prod:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: memoirfinance
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/memoirfinance
-      APP_ENV: production
-    secrets:
-      - firebase_credentials
-      - anthropic_api_key
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: https://api.memoirfinance.com
-    restart: always
-    depends_on:
-      - backend
-
-volumes:
-  postgres_prod:
-```
-
-### Environment Variables (Production)
-
-```
-# .env.production
-POSTGRES_USER=prod_memoir
-POSTGRES_PASSWORD=<strong_random_password>
-
-FIREBASE_API_KEY=<from_firebase_console>
-FIREBASE_PROJECT_ID=memoirfinance-prod
-ANTHROPIC_API_KEY=<from_anthropic_console>
-
-AWS_ACCESS_KEY_ID=<prod_s3_key>
-AWS_SECRET_ACCESS_KEY=<prod_s3_secret>
-AWS_S3_BUCKET=memoirfinance-prod-images
-
-APP_ENV=production
-APP_SECRET_KEY=<64_char_random_string>
-```
-
-### GitHub Actions CI/CD
-
-```yaml
-# .github/workflows/ci.yml
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  backend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cd backend && pip install -r requirements.txt
-      - run: cd backend && pytest tests/
-
-  frontend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cd frontend && npm ci
-      - run: cd frontend && npm run lint
-      - run: cd frontend && npm run build
-
-  deploy:
-    needs: [backend-test, frontend-test]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      # Deploy to hosting (Vercel, Railway, Render, etc.)
-```
-
----
-
 ## Summary
 
 ### Phase 5 Deliverables
@@ -429,7 +322,6 @@ jobs:
 | 5.1 | "Nhìn lại" Reports — biểu đồ tròn (by category) + biểu đồ thanh (by day) + API endpoint |
 | 5.2 | Profile/Settings — profile, wallet management, category management, settings |
 | 5.3 | Polish — empty states, loading states, error states, toast notifications, animations |
-| 5.4 | Deploy — docker-compose.prod.yml, production env template, GitHub Actions CI/CD |
 
 ### Success Criteria
 
@@ -444,11 +336,10 @@ jobs:
 - [ ] Loading states skeleton
 - [ ] Error states với retry
 - [ ] Toast notifications cho mọi action
-- [ ] Production Docker compose
-- [ ] CI/CD pipeline
+- [ ] Animations: card popup, auto-save countdown, pull-to-refresh, tab switch
 
 ### Phase tiếp theo
 
-**Post-MVP Roadmap** — Các tính năng sau MVP (AI Parent-Children OCR, Shared Wallets, Visual Mosaic, Mobile App, Push Notifications)
+**Phase 6: CI/CD + Deploy** — Production infrastructure, GitHub Actions pipeline, monitoring, launch
 
-Xem: `docs/PHASE-POST-MVP.md`
+Xem: `docs/PHASE-06.md`

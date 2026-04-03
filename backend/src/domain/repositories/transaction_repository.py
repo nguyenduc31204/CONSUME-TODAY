@@ -1,9 +1,9 @@
 """
 TransactionRepository — Abstract interface for Transaction persistence.
 """
+
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from src.domain.entities.transaction import Transaction
@@ -20,7 +20,7 @@ class TransactionRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_id(self, transaction_id: UUID) -> Optional[Transaction]:
+    async def get_by_id(self, transaction_id: UUID) -> Transaction | None:
         """Retrieve a transaction by UUID."""
         ...
 
@@ -29,10 +29,10 @@ class TransactionRepository(ABC):
         self,
         user_id: UUID,
         *,
-        wallet_id: Optional[UUID] = None,
-        category_id: Optional[UUID] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        wallet_id: UUID | None = None,
+        category_id: UUID | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         skip: int = 0,
         limit: int = 50,
     ) -> tuple[list[Transaction], int]:

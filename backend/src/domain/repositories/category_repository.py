@@ -1,8 +1,8 @@
 """
 CategoryRepository — Abstract interface for Category persistence.
 """
+
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
 
 from src.domain.entities.category import Category
@@ -19,13 +19,17 @@ class CategoryRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_id(self, category_id: UUID) -> Optional[Category]:
+    async def get_by_id(self, category_id: UUID) -> Category | None:
         """Retrieve a category by UUID."""
         ...
 
     @abstractmethod
     async def get_by_wallet_id(self, wallet_id: UUID) -> list[Category]:
         """List all categories for a wallet."""
+
+    @abstractmethod
+    async def get_by_user_id(self, user_id: UUID) -> list[Category]:
+        """List all active categories for all wallets of a user."""
         ...
 
     @abstractmethod

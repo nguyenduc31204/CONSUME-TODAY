@@ -18,8 +18,8 @@
 2. **`.planning/PROJECT.md`** — Project context, requirements, constraints
 3. **`Feature_Truth.md`** — Product spec (product rules: UX, flows, features)
 4. **`docs/architecture.md`** — Hexagonal + DDD architecture design
-5. **`.planning/ROADMAP.md`** — Phase execution roadmap
-6. **`.planning/REQUIREMENTS.md`** — All REQ-IDs, mapping to phases
+5. **`.planning/ROADMAP.md`** — Phase execution roadmap (6 phases)
+6. **`docs/PHASE-XX.md`** — Phase-specific execution plans (Phase 1-6)
 7. **`rule/`** — Coding conventions (7 files)
 
 ### Rule Files
@@ -150,10 +150,9 @@ test: add OCR validation tests
 
 This project uses **Get Shit Done (GSD)** methodology.
 
-- `.planning/ROADMAP.md` — Current roadmap with phases
+- `.planning/ROADMAP.md` — Current roadmap with phases (Phase 1-6)
 - `.planning/STATE.md` — Current execution state
-- `.planning/PHASE-*.md` — Phase completion documentation
-- `.planning/phases/` — Individual phase plans
+- `docs/PHASE-*.md` — Phase execution plans (Phase 1-6, including CI/CD in Phase 6)
 
 **Key commands:** `/gsd:plan-phase N`, `/gsd:execute-phase N`, `/gsd:progress`
 
@@ -173,4 +172,4 @@ Required:
 
 ---
 
-*Last updated: 2026-04-01*
+*Last updated: 2026-04-01 (Phase 5 complete)*

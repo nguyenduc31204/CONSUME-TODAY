@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { walletsApi } from '@/api/wallets'
 import type { WalletCreateData, WalletUpdateData } from '@/types/wallet'
 import { useUiStore } from '@/stores/uiStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /** Hook: List wallets */
 export function useWallets() {
@@ -36,7 +37,10 @@ export function useCreateWallet() {
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
-    mutationFn: async (data: WalletCreateData) => walletsApi.create(data),
+    mutationFn: async (data: WalletCreateData) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
+      return walletsApi.create(data)
+    },
     onSuccess: (response) => {
       if (response.success) {
         addToast('Đã tạo ví mới', 'success')
@@ -57,8 +61,10 @@ export function useUpdateWallet() {
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: WalletUpdateData }) =>
-      walletsApi.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: WalletUpdateData }) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
+      return walletsApi.update(id, data)
+    },
     onSuccess: (response, { id }) => {
       if (response.success) {
         addToast('Đã cập nhật ví', 'success')

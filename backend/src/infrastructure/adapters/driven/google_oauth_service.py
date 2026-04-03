@@ -1,9 +1,10 @@
 """
 Google OAuth 2.0 Service — Exchange auth code for user info.
 """
-from typing import Optional
-import httpx
 
+from typing import Optional
+
+import httpx
 from pydantic import BaseModel
 
 from src.config import get_settings
@@ -12,7 +13,8 @@ from src.infrastructure.shared.exceptions import UnauthorizedException
 
 class GoogleUserInfo(BaseModel):
     """Google user info extracted from ID token / userinfo endpoint."""
-    sub: str       # Google subject (unique per Google account)
+
+    sub: str  # Google subject (unique per Google account)
     email: str
     name: str
     picture: Optional[str] = None

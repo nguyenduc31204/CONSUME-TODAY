@@ -1,8 +1,6 @@
 """
 Response DTOs — OCR-related Pydantic models for API responses.
 """
-from datetime import date
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -10,7 +8,7 @@ from pydantic import BaseModel
 class OcrCategoryResult(BaseModel):
     """Category info from OCR with confidence score."""
 
-    id: Optional[str] = None  # Will be UUID string after mapping
+    id: str | None = None  # Will be UUID string after mapping
     name: str
     confidence: float
 
@@ -21,11 +19,12 @@ class OcrResultResponse(BaseModel):
     Mirrors the Claude OCR output with validated fields.
     """
 
-    merchant: Optional[str] = None
-    amount: Optional[int] = None  # VND, null if life-log
+    merchant: str | None = None
+    amount: int | None = None  # VND, null if life-log
     currency: str = "VND"
-    date: Optional[str] = None  # ISO date string
-    category: Optional[OcrCategoryResult] = None
+    date: str | None = None  # ISO date string
+    note: str | None = None
+    category: OcrCategoryResult | None = None
     confidence: float
     is_life_log: bool
-    reason: Optional[str] = None  # AI reasoning for the classification
+    reason: str | None = None  # AI reasoning for the classification

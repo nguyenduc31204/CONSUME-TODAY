@@ -1,21 +1,26 @@
 """
 Auth Routes — Google OAuth + JWT authentication endpoints.
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.config import get_settings
-from src.infrastructure.adapters.driven.database import get_db
-from src.infrastructure.adapters.driven.user_repository_impl import UserRepositoryImpl
-from src.infrastructure.adapters.driven.wallet_repository_impl import WalletRepositoryImpl
-from src.infrastructure.adapters.driven.category_repository_impl import CategoryRepositoryImpl
-from src.infrastructure.adapters.driven.jwt_service import JWTService
-from src.infrastructure.adapters.driven.google_oauth_service import GoogleOAuthService
-from src.application.use_cases.authenticate import AuthenticateUseCase
 from src.application.dtos.response.transaction_dto import UserResponse
+from src.application.use_cases.authenticate import AuthenticateUseCase
+from src.config import get_settings
+from src.infrastructure.adapters.driven.category_repository_impl import (
+    CategoryRepositoryImpl,
+)
+from src.infrastructure.adapters.driven.database import get_db
+from src.infrastructure.adapters.driven.google_oauth_service import GoogleOAuthService
+from src.infrastructure.adapters.driven.jwt_service import JWTService
+from src.infrastructure.adapters.driven.user_repository_impl import UserRepositoryImpl
+from src.infrastructure.adapters.driven.wallet_repository_impl import (
+    WalletRepositoryImpl,
+)
 from src.infrastructure.shared.exceptions import UnauthorizedException
 
 router = APIRouter()
@@ -44,6 +49,7 @@ def _get_user_id(authorization: str = Header(...)) -> UUID:
 
 
 # ── Request / Response DTOs ────────────────────────────────
+
 
 class GoogleLoginRequest(BaseModel):
     code: str  # Authorization code from Google OAuth flow
@@ -87,6 +93,7 @@ def _user_response(user) -> dict:
 
 
 # ── Routes ────────────────────────────────────────────────
+
 
 @router.post("/auth/register", response_model=dict, summary="Register with Email")
 async def register(

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Camera, Home, Calendar, BarChart3, User } from 'lucide-react'
 import { cn } from '@/utils/cn'
@@ -26,6 +26,13 @@ export function BottomNav() {
     // Trigger the hidden file input
     fileInputRef.current?.click()
   }
+
+  // Listen for memoir:focus-camera events (e.g. from empty state CTA)
+  useEffect(() => {
+    const handler = () => handleCameraClick()
+    window.addEventListener('memoir:focus-camera', handler)
+    return () => window.removeEventListener('memoir:focus-camera', handler)
+  }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

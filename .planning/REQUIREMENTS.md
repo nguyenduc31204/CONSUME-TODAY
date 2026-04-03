@@ -6,7 +6,7 @@
 
 ---
 
-## v1.0 MVP Requirements
+## v1.0 Requirements
 
 ### AUTH — Authentication & Onboarding
 
@@ -109,7 +109,7 @@
 
 ---
 
-## Post-MVP Requirements
+## Post-v1.0 Requirements
 
 ### OCR
 

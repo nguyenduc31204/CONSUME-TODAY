@@ -2,12 +2,14 @@
 CaptureExpenseUseCase — Core use case for capturing a photo and extracting expense data.
 Orchestrates: image upload → AI OCR → transaction creation → persistence.
 """
+
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
 from src.domain.entities.transaction import Transaction
 from src.domain.services.domain_service import OcrValidationService
+from src.infrastructure.shared.loguru_config import get_logger
 
 
 class IStoragePort(Protocol):
@@ -47,14 +49,11 @@ class IAiOcrPort(Protocol):
 class ITransactionRepositoryPort(Protocol):
     """Output port for transaction persistence."""
 
-    async def save(self, transaction: Transaction) -> Transaction:
-        ...
+    async def save(self, transaction: Transaction) -> Transaction: ...
 
-    async def get_by_id(self, transaction_id: UUID) -> Transaction | None:
-        ...
+    async def get_by_id(self, transaction_id: UUID) -> Transaction | None: ...
 
-    async def update(self, transaction: Transaction) -> Transaction:
-        ...
+    async def update(self, transaction: Transaction) -> Transaction: ...
 
 
 class CaptureExpenseUseCase:
@@ -143,7 +142,8 @@ class CaptureExpenseUseCase:
                 amount=ocr_result.amount,
                 currency=ocr_result.currency,
                 transaction_date=datetime.combine(ocr_result.date, datetime.min.time())
-                    if ocr_result.date else None,
+                if ocr_result.date
+                else None,
                 ocr_confidence=ocr_result.confidence,
                 is_life_log=False,
             )
@@ -168,6 +168,4 @@ class CaptureExpenseUseCase:
         return saved, ocr_dict
 
 
-# module-level logger for use in methods
-from src.infrastructure.shared.loguru_config import get_logger
 logger = get_logger()

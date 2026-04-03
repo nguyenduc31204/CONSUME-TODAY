@@ -2,6 +2,7 @@
 Password Service — bcrypt hashing and verification.
 Uses bcrypt directly (bypasses passlib compatibility issue with bcrypt 5.x).
 """
+
 import bcrypt
 
 

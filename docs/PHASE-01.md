@@ -25,7 +25,7 @@ Thiết lập Git repo và GSD workflow hoàn chỉnh.
 | `.git/` | Git repo (main branch) |
 | `.gitignore` | Ignore: node_modules, pycache, .env, .planning/ |
 | `.planning/PROJECT.md` | Project context từ Feature_Truth.md |
-| `.planning/REQUIREMENTS.md` | 11 MVP REQ-IDs + 9 post-MVP REQ-IDs |
+| `.planning/REQUIREMENTS.md` | 11 REQ-IDs + 9 post-v1.0 REQ-IDs |
 | `.planning/ROADMAP.md` | 5 phases: Nền tảng → Backend Core → AI OCR → Frontend Core → Reports |
 | `.planning/STATE.md` | Trạng thái phase, decisions log |
 | `.planning/config.json` | GSD config: YOLO, coarse, parallelization, GSD workflow |
@@ -148,9 +148,9 @@ docker compose config --quiet  # pass
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-python -c "from app.main import app; print('OK')"
-ruff check app/  # 0 errors
-uvicorn app.main:app --reload
+python -c "from src.infrastructure.adapters.driving.main import app; print('OK')"
+ruff check src/  # 0 errors
+uvicorn src.infrastructure.adapters.driving.main:app --reload --port 8000
 
 # Frontend
 cd frontend && npm install
@@ -161,6 +161,6 @@ npm run build  # 0 TypeScript errors
 
 ## Phase tiếp theo
 
-**Phase 2: Backend Core** — Authentication, Database Schema, Transaction/Wallet/Category APIs
+**Phase 2: Backend Core** — Authentication, Database Schema, và toàn bộ Core APIs (Wallets, Categories, Transactions)
 
 Xem: `docs/PHASE-02.md`

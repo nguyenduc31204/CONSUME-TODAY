@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Edit3, Check, ChevronDown } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { X, Edit3, Check, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/utils/cn'
 import { useUploadStore } from '@/stores/uploadStore'
 import { useUiStore } from '@/stores/uiStore'
+import { useAuthStore } from '@/stores/authStore'
 import { transactionsApi } from '@/api/transactions'
 import type { UploadTransactionResponse, TransactionEditResponse, WalletSummary, CategorySummary } from '@/types/upload'
 import type { TransactionUpdateData } from '@/types/transaction'
@@ -98,8 +99,13 @@ function QuickEditForm({ data, onSave, onCancel }: QuickEditFormProps) {
     data.ocr_result.amount !== null ? String(data.ocr_result.amount) : ''
   )
   const [merchant, setMerchant] = useState(data.ocr_result.merchant ?? '')
+  const [note, setNote] = useState(data.ocr_result.note ?? '')
   const [selectedWalletId, setSelectedWalletId] = useState(data.wallet_id)
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [isIncome, setIsIncome] = useState(false)
+  // Pre-select OCR-suggested category if no DB category was loaded yet
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    data.ocr_result.category?.id ?? null
+  )
   const [saving, setSaving] = useState(false)
 
   const { data: editData, isLoading } = useQuery<TransactionEditResponse, Error, TransactionEditResponse>({
@@ -109,7 +115,7 @@ function QuickEditForm({ data, onSave, onCancel }: QuickEditFormProps) {
       if (!res.success || !res.data) throw new Error(res.message)
       return res.data
     },
-    enabled: true,
+    enabled: !!useAuthStore.getState().accessToken,
   })
 
   const wallets: WalletSummary[] = editData?.wallets ?? [
@@ -127,11 +133,19 @@ function QuickEditForm({ data, onSave, onCancel }: QuickEditFormProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
+      // If user explicitly selected a DB category, use it.
+      // Otherwise, if OCR already assigned a category_id, keep it.
+      // Only send category_id if we have a real UUID (not null).
+      const categoryIdToSave =
+        selectedCategoryId ?? data.ocr_result.category?.id ?? undefined
+
       await onSave({
         amount: amount ? parseInt(amount, 10) : undefined,
         merchant_name: merchant || undefined,
+        note: note || undefined,
         wallet_id: selectedWalletId,
-        category_id: selectedCategoryId || undefined,
+        category_id: categoryIdToSave,
+        is_income: isIncome,
       })
     } finally {
       setSaving(false)
@@ -162,9 +176,44 @@ function QuickEditForm({ data, onSave, onCancel }: QuickEditFormProps) {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-memoir-300"
+              className={cn(
+                'w-full px-3 py-2 rounded-xl text-lg font-semibold focus:outline-none focus:ring-2',
+                isIncome
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 focus:ring-emerald-300'
+                  : 'border-gray-200 text-gray-900 focus:ring-memoir-300',
+              )}
               inputMode="numeric"
             />
+          </div>
+
+          {/* Expense / Income toggle */}
+          <div className="flex rounded-xl bg-gray-100 p-1 gap-1">
+            <button
+              type="button"
+              onClick={() => setIsIncome(false)}
+              className={cn(
+                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5',
+                !isIncome
+                  ? 'bg-white text-red-500 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600',
+              )}
+            >
+              <TrendingDown className="h-4 w-4" />
+              Chi tiêu
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsIncome(true)}
+              className={cn(
+                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5',
+                isIncome
+                  ? 'bg-emerald-500 text-white shadow-sm'
+                  : 'text-gray-400 hover:text-emerald-600',
+              )}
+            >
+              <TrendingUp className="h-4 w-4" />
+              Thu nhập
+            </button>
           </div>
 
           {/* Merchant */}
@@ -175,6 +224,18 @@ function QuickEditForm({ data, onSave, onCancel }: QuickEditFormProps) {
               value={merchant}
               onChange={(e) => setMerchant(e.target.value)}
               placeholder="Tên cửa hàng"
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-memoir-300"
+            />
+          </div>
+
+          {/* Note */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Ghi chú</label>
+            <input
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Thêm ghi chú..."
               className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-memoir-300"
             />
           </div>
@@ -251,8 +312,9 @@ interface CardPopupProps {
 }
 
 export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
-  const { state, startEditing, setDone } = useUploadStore()
+  const { state, stopEditing, setDone } = useUploadStore()
   const addToast = useUiStore((s) => s.addToast)
+  const queryClient = useQueryClient()
 
   if (state.phase === 'idle') return null
 
@@ -288,10 +350,18 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
 
   const handleSave = async (updates: TransactionUpdateData) => {
     if (!data) return
+    if (!useAuthStore.getState().accessToken) {
+      addToast('Vui lòng đăng nhập', 'warning')
+      return
+    }
     const res = await transactionsApi.update(data.transaction_id, updates)
     if (res.success) {
       addToast('Đã lưu!', 'success')
       setDone(data)
+      // Refresh both transactions and reports
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      await queryClient.invalidateQueries({ queryKey: ['reports'] })
+      await queryClient.invalidateQueries({ queryKey: ['wallets'] })
     } else {
       addToast(res.message || 'Lưu thất bại', 'error')
     }
@@ -313,7 +383,7 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
         <div className="flex flex-col items-center gap-4 py-8 px-6">
           <div className="relative">
             {file && (
-              // eslint-disable-next-line jsx-a11y/img-redundant-alt
+              
               <img
                 src={URL.createObjectURL(file)}
                 alt="Đang xử lý..."
@@ -351,7 +421,7 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
       <div className="flex flex-col max-h-[85vh]">
         {/* Image */}
         <div className="relative flex-shrink-0">
-          {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
+          
           <img
             src={previewUrl}
             alt={ocr?.merchant ?? 'Ảnh kỷ niệm'}
@@ -382,7 +452,7 @@ export function CardPopup({ onConfirm, onEdit }: CardPopupProps) {
             <QuickEditForm
               data={data}
               onSave={handleSave}
-              onCancel={() => startEditing()}
+              onCancel={() => stopEditing()}
             />
           ) : (
             <>

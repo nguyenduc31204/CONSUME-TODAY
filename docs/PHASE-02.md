@@ -20,10 +20,13 @@ id              UUID PRIMARY KEY (auto)
 email           VARCHAR(255) UNIQUE NOT NULL
 name            VARCHAR(255) NOT NULL
 avatar_url      VARCHAR(512) NULL
-firebase_uid    VARCHAR(128) UNIQUE NOT NULL  -- Firebase Auth UID
+oauth_provider  VARCHAR(50) NOT NULL  -- 'google', 'apple'
+oauth_id        VARCHAR(255) NOT NULL  -- Provider's user ID
 created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 updated_at      TIMESTAMP NOT NULL DEFAULT NOW()
 deleted_at      TIMESTAMP NULL  -- Soft delete
+
+UNIQUE: (oauth_provider, oauth_id) -- không trùng OAuth ID theo provider
 ```
 
 **Bảng: `wallets`**
@@ -130,55 +133,62 @@ INDEX: (transaction_id)
 
 ---
 
-## 2.2 — Firebase Authentication
+## 2.2 — Google OAuth 2.0 + Custom JWT Authentication
 
 ### Mục tiêu
 
-Tích hợp Firebase Auth (Google + Apple Social Login) và middleware bảo vệ API routes.
+Tích hợp Google OAuth 2.0 (Google + Apple Social Login) và middleware bảo vệ API routes sử dụng Custom JWT (RS256).
 
-### Firebase Auth Flow
+### Auth Flow
 
 ```
-1. Frontend: Firebase SDK → Google/Apple OAuth → nhận Firebase ID Token (JWT)
-2. Frontend: gửi ID Token lên backend qua Authorization header
-3. Backend: verify Firebase ID Token → lấy UID → tạo/lấy user record
-4. Backend: trả về user info + tạo session/cookie
+1. Frontend: redirect đến Google OAuth consent screen
+2. Google callback → Frontend nhận authorization code
+3. Frontend: gửi code lên backend
+4. Backend: exchange code → lấy Google access_token → verify user info
+5. Backend: upsert user record → tạo JWT (access_token + refresh_token)
+6. Backend: trả về JWT cho Frontend
+7. Frontend: lưu JWT → gọi API kèm Bearer token
+8. Backend: verify JWT ở mỗi request (middleware)
 ```
 
 ### API Endpoints
 
 | Method | Path | Auth | Mô tả |
 |---|---|---|---|
-| POST | `/api/v1/auth/google` | None | Đăng nhập Google → verify token → upsert user |
-| POST | `/api/v1/auth/apple` | None | Đăng nhập Apple → verify token → upsert user |
-| POST | `/api/v1/auth/logout` | Required | Đăng xuất |
+| POST | `/api/v1/auth/google` | None | Exchange Google code → verify → upsert user → return JWT |
+| POST | `/api/v1/auth/apple` | None | Exchange Apple code → verify → upsert user → return JWT |
+| POST | `/api/v1/auth/refresh` | Refresh Token | Refresh access token |
+| POST | `/api/v1/auth/logout` | Required | Đăng xuất (revoke refresh token) |
 | GET | `/api/v1/auth/me` | Required | Lấy thông tin user hiện tại |
 
 **POST /api/v1/auth/google**
 ```
-Request: { "idToken": "firebase_google_id_token" }
+Request: { "code": "google_authorization_code" }
 Response: {
   success: true,
   data: {
     user: { id, email, name, avatar_url },
-    wallet: { id, name, ... },        -- ví mặc định
-    categories: [ ...6 default... ]   -- 6 danh mục mặc định
+    access_token: "<jwt_access_token>",   -- expires 15 phút
+    refresh_token: "<jwt_refresh_token>",  -- expires 7 ngày
+    wallet: { id, name, ... },             -- ví mặc định
+    categories: [ ...6 default... ]        -- 6 danh mục mặc định
   },
   message: ""
 }
 ```
 
 **Auto-create on first login:**
-- Kiểm tra user đã tồn tại qua `firebase_uid`
+- Kiểm tra user đã tồn tại qua `oauth_provider + oauth_id`
 - Nếu user mới: tạo 1 Wallet mặc định "Ví Cá nhân" + 6 Categories mặc định
 - Không có onboarding wizard
 
 ### Auth Middleware
 
-`FirebaseAuthMiddleware`:
+`JWTAuthMiddleware`:
 - Extract `Authorization: Bearer <token>` header
-- Verify Firebase ID Token (throws if invalid/expired)
-- Attach `request.state.user = { id, firebase_uid, email }` cho downstream handlers
+- Verify JWT RS256 signature (throws if invalid/expired)
+- Attach `request.state.user = { id, email, name }` cho downstream handlers
 - FastAPI Dependency: `get_current_user() -> User`
 
 ---
@@ -315,6 +325,6 @@ CRUD hoàn chỉnh cho Transactions, hỗ trợ Life Log mode.
 
 ### Phase tiếp theo
 
-**Phase 3: AI OCR + Life Log** — Image upload, S3 storage, Claude API OCR, auto-save, Life Log flow
+**Phase 3: AI OCR + Life Log** — Image upload, Cloudflare R2 storage, Claude API OCR, auto-save mechanism, Life Log flow
 
 Xem: `docs/PHASE-03.md`

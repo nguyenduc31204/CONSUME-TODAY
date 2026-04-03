@@ -1,20 +1,24 @@
 """
 Category Routes — Full CRUD for categories with auth + wallet owner validation.
 """
-from typing import Optional
+
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.adapters.driven.database import get_db
-from src.infrastructure.adapters.driven.category_repository_impl import CategoryRepositoryImpl
-from src.infrastructure.adapters.driven.wallet_repository_impl import WalletRepositoryImpl
-from src.infrastructure.adapters.driven.jwt_service import JWTService
-from src.infrastructure.shared.exceptions import ForbiddenException, NotFoundException
-from src.application.use_cases.manage_category import ManageCategoryUseCase
 from src.application.dtos.response.transaction_dto import CategoryResponse
+from src.application.use_cases.manage_category import ManageCategoryUseCase
+from src.infrastructure.adapters.driven.category_repository_impl import (
+    CategoryRepositoryImpl,
+)
+from src.infrastructure.adapters.driven.database import get_db
+from src.infrastructure.adapters.driven.jwt_service import JWTService
+from src.infrastructure.adapters.driven.wallet_repository_impl import (
+    WalletRepositoryImpl,
+)
+from src.infrastructure.shared.exceptions import ForbiddenException, NotFoundException
 
 router = APIRouter()
 
@@ -35,8 +39,9 @@ def _get_category_uc(db: AsyncSession) -> ManageCategoryUseCase:
 
 # ── Request DTOs ─────────────────────────────────────────
 
+
 class CategoryCreateRequest(BaseModel):
-    wallet_id: UUID
+    wallet_id: UUID | None = None  # uses default wallet if not provided
     name: str
     icon: str = "tag"
     color: str = "#9333EA"
@@ -44,40 +49,39 @@ class CategoryCreateRequest(BaseModel):
 
 
 class CategoryUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    icon: Optional[str] = None
-    color: Optional[str] = None
-    emoji: Optional[str] = None
+    name: str | None = None
+    icon: str | None = None
+    color: str | None = None
+    emoji: str | None = None
 
 
 # ── Routes ───────────────────────────────────────────────
 
+
 @router.get("/categories")
 async def list_categories(
-    wallet_id: Optional[UUID] = None,
+    wallet_id: UUID | None = None,
     user_id: UUID = Depends(_get_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    List categories for a wallet.
-    If wallet_id is not provided, returns categories from the user's default wallet.
+    List categories for a wallet, or all categories for the user if no wallet_id.
     """
-    wallet_repo = WalletRepositoryImpl(db)
+    cat_repo = CategoryRepositoryImpl(db)
+
     if wallet_id is None:
-        default_wallet = await wallet_repo.get_default(user_id)
-        if default_wallet is None:
-            return {"success": True, "data": [], "message": ""}
-        wallet_id = default_wallet.id
+        # Return all categories across all user's wallets
+        categories = await cat_repo.get_by_user_id(user_id)
     else:
         # Verify wallet ownership
+        wallet_repo = WalletRepositoryImpl(db)
         wallet = await wallet_repo.get_by_id(wallet_id)
         if wallet is None:
             raise NotFoundException(message="Wallet not found.")
         if wallet.user_id != user_id:
             raise ForbiddenException(message="You do not have access to this wallet.")
+        categories = await cat_repo.get_by_wallet_id(wallet_id)
 
-    uc = _get_category_uc(db)
-    categories = await uc.list_categories(wallet_id)
     return {
         "success": True,
         "data": [CategoryResponse.model_validate(c).model_dump() for c in categories],
@@ -104,7 +108,11 @@ async def get_category(
     if wallet is None or wallet.user_id != user_id:
         raise ForbiddenException(message="You do not have access to this category.")
 
-    return {"success": True, "data": CategoryResponse.model_validate(category).model_dump(), "message": ""}
+    return {
+        "success": True,
+        "data": CategoryResponse.model_validate(category).model_dump(),
+        "message": "",
+    }
 
 
 @router.post("/categories")
@@ -113,21 +121,27 @@ async def create_category(
     user_id: UUID = Depends(_get_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a custom category for a wallet."""
+    """Create a custom category for a wallet (uses default wallet if wallet_id not provided)."""
     if len(request.name.strip()) == 0:
         raise HTTPException(status_code=422, detail="Category name cannot be empty.")
 
-    # Verify wallet ownership
     wallet_repo = WalletRepositoryImpl(db)
-    wallet = await wallet_repo.get_by_id(request.wallet_id)
-    if wallet is None:
-        raise NotFoundException(message="Wallet not found.")
-    if wallet.user_id != user_id:
-        raise ForbiddenException(message="You do not have access to this wallet.")
+    if request.wallet_id is None:
+        wallet = await wallet_repo.get_default(user_id)
+        if wallet is None:
+            raise NotFoundException(
+                message="No wallet found. Please create a wallet first."
+            )
+    else:
+        wallet = await wallet_repo.get_by_id(request.wallet_id)
+        if wallet is None:
+            raise NotFoundException(message="Wallet not found.")
+        if wallet.user_id != user_id:
+            raise ForbiddenException(message="You do not have access to this wallet.")
 
     uc = _get_category_uc(db)
     category = await uc.create_category(
-        wallet_id=request.wallet_id,
+        wallet_id=wallet.id,
         name=request.name,
         icon=request.icon,
         color=request.color,
@@ -162,7 +176,11 @@ async def update_category(
         raise ForbiddenException(message="You do not have access to this category.")
 
     # Default categories cannot be renamed/deleted
-    if category.is_default and request.name is not None and request.name != category.name:
+    if (
+        category.is_default
+        and request.name is not None
+        and request.name != category.name
+    ):
         raise ForbiddenException(message="Cannot rename a default category.")
 
     updated = await uc.update_category(
@@ -172,7 +190,11 @@ async def update_category(
         color=request.color,
         emoji=request.emoji,
     )
-    return {"success": True, "data": CategoryResponse.model_validate(updated).model_dump(), "message": "Category updated."}
+    return {
+        "success": True,
+        "data": CategoryResponse.model_validate(updated).model_dump(),
+        "message": "Category updated.",
+    }
 
 
 @router.delete("/categories/{category_id}")

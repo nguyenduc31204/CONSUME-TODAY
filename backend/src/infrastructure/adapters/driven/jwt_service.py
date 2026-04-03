@@ -2,11 +2,11 @@
 JWT Service — RS256 (production) or HS256 (local dev fallback).
 Handles access + refresh token lifecycle.
 """
+
 from datetime import datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from pydantic import BaseModel
 
 from src.config import get_settings
@@ -64,20 +64,20 @@ class JWTService:
     def create_token_pair(self, user_id: UUID) -> tuple[str, str]:
         return self.create_access_token(user_id), self.create_refresh_token(user_id)
 
-    def verify_token(self, token: str) -> Optional[TokenPayload]:
+    def verify_token(self, token: str) -> TokenPayload | None:
         try:
             payload = jwt.decode(token, self._verify_key, algorithms=[self._algorithm])
             return TokenPayload(**payload)
         except JWTError:
             return None
 
-    def verify_access_token(self, token: str) -> Optional[UUID]:
+    def verify_access_token(self, token: str) -> UUID | None:
         p = self.verify_token(token)
         if p is None or p.type != "access":
             return None
         return UUID(p.sub)
 
-    def verify_refresh_token(self, token: str) -> Optional[UUID]:
+    def verify_refresh_token(self, token: str) -> UUID | None:
         p = self.verify_token(token)
         if p is None or p.type != "refresh":
             return None

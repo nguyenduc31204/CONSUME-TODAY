@@ -1,6 +1,7 @@
 """
 ManageWalletUseCase — Create, update, delete wallets.
 """
+
 from uuid import UUID
 
 from src.domain.entities.wallet import Wallet
@@ -24,6 +25,7 @@ class ManageWalletUseCase:
         color: str = "#9333EA",
         icon: str = "wallet",
         is_default: bool = False,
+        initial_balance: int = 0,
     ) -> Wallet:
         """Create a new wallet for a user."""
         wallet = Wallet(
@@ -33,8 +35,17 @@ class ManageWalletUseCase:
             color=color,
             icon=icon,
             is_default=is_default,
+            balance=initial_balance,
         )
         return await self._repo.save(wallet)
+
+    async def adjust_balance(self, wallet_id: UUID, amount: int) -> Wallet:
+        """Adjust wallet balance by amount (positive = add income, negative = subtract/expense)."""
+        wallet = await self._repo.get_by_id(wallet_id)
+        if not wallet:
+            raise ValueError("Wallet not found")
+        wallet.adjust_balance(amount)
+        return await self._repo.update(wallet)
 
     async def list_wallets(self, user_id: UUID) -> list[Wallet]:
         """List all wallets for a user."""
@@ -61,6 +72,7 @@ class ManageWalletUseCase:
         name: str | None = None,
         color: str | None = None,
         description: str | None = None,
+        icon: str | None = None,
     ) -> Wallet:
         """Update a wallet."""
         wallet = await self._repo.get_by_id(wallet_id)
@@ -73,6 +85,9 @@ class ManageWalletUseCase:
             wallet.update_color(color)
         if description is not None:
             wallet.description = description
+            wallet.touch()
+        if icon is not None:
+            wallet.icon = icon
             wallet.touch()
 
         return await self._repo.update(wallet)

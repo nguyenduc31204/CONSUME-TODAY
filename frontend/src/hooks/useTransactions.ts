@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi } from '@/api/transactions'
 import type { TransactionListParams, TransactionUpdateData } from '@/types/transaction'
 import { useUiStore } from '@/stores/uiStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /** Hook: List transactions with filters */
 export function useTransactions(params?: TransactionListParams) {
@@ -37,6 +38,7 @@ export function useUploadTransaction() {
 
   return useMutation({
     mutationFn: async ({ file, walletId }: { file: File; walletId?: string }) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
       const response = await transactionsApi.upload(file, walletId)
       if (!response.success) throw new Error(response.message)
       return response.data
@@ -58,6 +60,7 @@ export function useUpdateTransaction() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: TransactionUpdateData }) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
       return transactionsApi.update(id, data)
     },
     onSuccess: (response, _vars) => {
@@ -80,7 +83,10 @@ export function useDeleteTransaction() {
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
-    mutationFn: async (id: string) => transactionsApi.delete(id),
+    mutationFn: async (id: string) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
+      return transactionsApi.delete(id)
+    },
     onSuccess: (response) => {
       if (response.success) {
         addToast('Đã xóa giao dịch', 'success')

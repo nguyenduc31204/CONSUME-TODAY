@@ -2,15 +2,16 @@
 
 ## Overview
 
-Xây dựng MemoirFinance — nền tảng nhật ký sống lấy hình ảnh làm trung tâm — từ greenfield đến production MVP. 5 phase từ nền tảng hạ tầng, qua backend core + AI OCR, đến frontend và báo cáo. Zero onboarding, AI auto-save sau 3 giây, Life Log photos.
+Xây dựng MemoirFinance — nền tảng nhật ký sống lấy hình ảnh làm trung tâm — từ greenfield đến production. 6 phase từ nền tảng hạ tầng, qua backend core + AI OCR, đến frontend, báo cáo, và CI/CD/deploy. Zero onboarding, AI auto-save sau 3 giây, Life Log photos.
 
 ## Phases
 
 - [ ] **Phase 1: Nền tảng** — Dev environment, full project structure, GSD workflow
 - [ ] **Phase 2: Backend Core** — FastAPI + PostgreSQL + Auth + Transaction/Wallet/Category APIs
-- [ ] **Phase 3: AI OCR + Life Log** — AI OCR invoice processing, S3 image storage, Life Log flow
+- [ ] **Phase 3: AI OCR + Life Log** — AI OCR invoice processing, Cloudflare R2 image storage, Life Log flow
 - [ ] **Phase 4: Frontend Core** — "Hôm Nay" Feed + Camera FAB + Journal (Calendar + Grid views)
-- [ ] **Phase 5: Nhìn Lại + Polish** — Reports/charts, onboarding-free UX polish, deploy-ready
+- [ ] **Phase 5: Nhìn Lại + Polish** — Reports/charts, Profile/Settings, UX polish hoàn chỉnh
+- [ ] **Phase 6: CI/CD + Deploy** — Production infrastructure, GitHub Actions pipeline, monitoring, launch
 
 ## Phase Details
 
@@ -35,11 +36,11 @@ Plans:
 ---
 
 ### Phase 2: Backend Core
-**Goal**: Complete FastAPI backend with PostgreSQL, Firebase Auth, Transaction/Wallet/Category APIs
+**Goal**: Complete FastAPI backend with PostgreSQL, Google OAuth 2.0 + Custom JWT, Transaction/Wallet/Category APIs
 **Depends on**: Phase 1
 **Requirements**: AUTH-01, AUTH-02, WALL-01, WALL-02
 **Success Criteria** (what must be TRUE):
-  1. User can login with Google/Apple via Firebase Auth
+  1. User can login with Google/Apple via Google OAuth 2.0 + Custom JWT (RS256)
   2. User can create custom categories
   3. User can create/view wallets
   4. User can create/read/update/delete transactions
@@ -50,19 +51,19 @@ Plans:
 
 Plans:
 - [ ] 02-01: Database Schema + Migrations (PostgreSQL with Alembic)
-- [ ] 02-02: Firebase Auth + User Management
+- [ ] 02-02: Google OAuth 2.0 + Custom JWT Authentication + User Management
 - [ ] 02-03: Wallet & Category APIs
 - [ ] 02-04: Transaction API + Business Logic
 
 ---
 
 ### Phase 3: AI OCR + Life Log
-**Goal**: AI OCR invoice processing, S3 image storage, Life Log photo flow, auto-save mechanism
+**Goal**: AI OCR invoice processing, Cloudflare R2 image storage, Life Log photo flow, auto-save mechanism
 **Depends on**: Phase 2
 **Requirements**: OCR-01, LIFE-01
 **Success Criteria** (what must be TRUE):
   1. User uploads image → AI OCR extracts: merchant, amount, date, category in < 2s
-  2. Image saved to S3, URL stored in database
+  2. Image saved to Cloudflare R2, URL stored in database
   3. Transaction created with AI-extracted data, auto-saves after 3 seconds
   4. Life Log photo (no receipt) → saved with 0đ amount, tagged as "Life Log"
   5. User can edit any field post-save (Human-in-the-loop)
@@ -71,7 +72,7 @@ Plans:
 **Plans**: 3 plans (TBD — planned during Phase 2)
 
 Plans:
-- [ ] 03-01: Image Upload + S3 Storage Adapter
+- [ ] 03-01: Image Upload + Cloudflare R2 Storage Adapter
 - [ ] 03-02: AI OCR Integration (Claude API + few-shot prompting + validation)
 - [ ] 03-03: Auto-Save + Life Log Flow
 
@@ -99,7 +100,7 @@ Plans:
 ---
 
 ### Phase 5: Nhìn Lại + Polish
-**Goal**: Reports/charts, profile/settings, polish, deploy-ready
+**Goal**: Reports/charts, profile/settings, complete UX polish
 **Depends on**: Phase 4
 **Requirements**: REPO-01, (AUTH-02 polish)
 **Success Criteria** (what must be TRUE):
@@ -108,13 +109,38 @@ Plans:
   3. "Cá nhân" tab: profile, wallet management, category management, settings
   4. Zero onboarding: new user logs in → lands directly on "Hôm Nay"
   5. First login auto-creates: 1 default wallet + 6 default categories
-  6. App is deploy-ready (Docker compose production config)
+  6. Complete UX polish: empty states, loading skeletons, error states, toast notifications, animations
   7. No `print()` statements anywhere in codebase
-**Plans**: 2 plans (TBD — planned during Phase 4)
+**Plans**: 3 plans (planned during Phase 4)
 
 Plans:
 - [ ] 05-01: Reports ("Nhìn Lại") — pie/bar charts
-- [ ] 05-02: Profile + Settings + Polish + Deploy Config
+- [ ] 05-02: Profile + Settings — profile, wallet CRUD, category CRUD, app settings
+- [ ] 05-03: UX Polish — empty states, loading skeletons, error states, toast notifications, animations
+
+---
+
+### Phase 6: CI/CD + Deploy
+**Goal**: Production infrastructure, GitHub Actions CI/CD pipeline, monitoring, launch
+**Depends on**: Phase 5
+**Requirements**: All previous phases complete
+**Success Criteria** (what must be TRUE):
+  1. `docker-compose.prod.yml` runs correctly (postgres, backend, frontend)
+  2. CI pipeline: backend lint + type-check + test pass
+  3. CI pipeline: frontend lint + type-check + test pass
+  4. CD: auto-deploy on main push
+  5. Health check endpoint returns DB + R2 + AI status
+  6. Structured logging in correct format
+  7. SSL certificate valid (Cloudflare Origin or Let's Encrypt)
+  8. Pre-launch checklist completed
+**Plans**: 5 plans (planned during Phase 5)
+
+Plans:
+- [ ] 06-01: Production Docker Compose + Dockerfiles (multi-stage)
+- [ ] 06-02: GitHub Actions CI/CD Pipeline — lint → test → build → deploy
+- [ ] 06-03: Monitoring + Observability — structured logging, health check, Sentry
+- [ ] 06-04: Domain + SSL + CDN — Nginx, Cloudflare SSL, R2 CDN
+- [ ] 06-05: Launch Checklist — pre-launch verification, launch sequence
 
 ---
 
@@ -129,4 +155,5 @@ Phases execute in numeric order.
 | 2. Backend Core | 0/4 | Not started | - |
 | 3. AI OCR + Life Log | 0/3 | Not started | - |
 | 4. Frontend Core | 0/3 | Not started | - |
-| 5. Nhìn lại + Polish | 0/2 | Not started | - |
+| 5. Nhìn lại + Polish | 0/3 | Not started | - |
+| 6. CI/CD + Deploy | 0/5 | Not started | - |

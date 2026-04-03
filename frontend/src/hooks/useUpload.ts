@@ -6,6 +6,7 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useUploadStore } from '@/stores/uploadStore'
 import { useUiStore } from '@/stores/uiStore'
+import { useAuthStore } from '@/stores/authStore'
 import { transactionsApi } from '@/api/transactions'
 import type { UploadTransactionResponse } from '@/types/upload'
 
@@ -22,6 +23,9 @@ export function useUpload() {
       file: File
       walletId?: string
     }): Promise<UploadTransactionResponse> => {
+      if (!useAuthStore.getState().accessToken) {
+        throw new Error('Vui lòng đăng nhập để chụp ảnh')
+      }
       store.startUpload(file)
       const res = await transactionsApi.upload(file, walletId)
       if (!res.success || !res.data) {
@@ -33,6 +37,9 @@ export function useUpload() {
     onSuccess: (data: UploadTransactionResponse) => {
       store.setPreview(data, (useUploadStore.getState().state as { file: File }).file)
       // Auto-save is handled by CardPopup countdown
+      // Invalidate both transactions and reports so Home/Journal/Reports all refresh
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
 
     onError: (error: Error) => {
@@ -54,14 +61,20 @@ export function useUpload() {
 
     store.startSaving(state.data)
     try {
-      await transactionsApi.confirm(state.data.transaction_id)
+      const res = await transactionsApi.confirm(state.data.transaction_id)
+      if (!res.success) {
+        throw new Error(res.message || 'Xác nhận thất bại')
+      }
       store.setDone(state.data)
       addToast('Đã lưu kỷ niệm!', 'success')
-      // Refresh the transactions list
+      // Refresh transactions, reports and wallets
       await queryClient.invalidateQueries({ queryKey: ['transactions'] })
-    } catch {
-      store.setError('Lưu thất bại')
-      addToast('Lưu thất bại', 'error')
+      await queryClient.invalidateQueries({ queryKey: ['reports'] })
+      await queryClient.invalidateQueries({ queryKey: ['wallets'] })
+      await queryClient.invalidateQueries({ queryKey: ['wallets'] })
+    } catch (err) {
+      store.setError(err instanceof Error ? err.message : 'Lưu thất bại')
+      addToast(err instanceof Error ? err.message : 'Lưu thất bại', 'error')
     }
   }, [store, addToast, queryClient])
 

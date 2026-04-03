@@ -2,8 +2,8 @@
 CategoryRepositoryImpl — SQLAlchemy async implementation of CategoryRepository.
 Driven adapter: persistence.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -35,7 +35,9 @@ class CategoryRepositoryImpl(CategoryRepository):
             deleted_at=model.deleted_at,
         )
 
-    def _to_model(self, entity: Category, model: Optional[CategoryModel] = None) -> CategoryModel:
+    def _to_model(
+        self, entity: Category, model: CategoryModel | None = None
+    ) -> CategoryModel:
         if model is None:
             model = CategoryModel()
         model.id = entity.id
@@ -58,7 +60,7 @@ class CategoryRepositoryImpl(CategoryRepository):
         await self._session.refresh(model)
         return self._to_entity(model)
 
-    async def get_by_id(self, category_id: UUID) -> Optional[Category]:
+    async def get_by_id(self, category_id: UUID) -> Category | None:
         stmt = select(CategoryModel).where(
             CategoryModel.id == category_id,
             CategoryModel.deleted_at.is_(None),
@@ -73,14 +75,32 @@ class CategoryRepositoryImpl(CategoryRepository):
             .where(
                 CategoryModel.wallet_id == wallet_id,
                 CategoryModel.deleted_at.is_(None),
-                CategoryModel.is_active == True,
+                CategoryModel.is_active,
             )
             .order_by(CategoryModel.is_default.desc(), CategoryModel.created_at)
         )
         result = await self._session.execute(stmt)
         return [self._to_entity(m) for m in result.scalars().all()]
 
-    async def get_by_name(self, wallet_id: UUID, name: str) -> Optional[Category]:
+    async def get_by_user_id(self, user_id: UUID) -> list[Category]:
+        """List all active categories across all wallets belonging to a user."""
+        from src.infrastructure.adapters.driven.database import WalletModel
+
+        stmt = (
+            select(CategoryModel)
+            .join(WalletModel, CategoryModel.wallet_id == WalletModel.id)
+            .where(
+                WalletModel.user_id == user_id,
+                WalletModel.deleted_at.is_(None),
+                CategoryModel.deleted_at.is_(None),
+                CategoryModel.is_active,
+            )
+            .order_by(CategoryModel.is_default.desc(), CategoryModel.created_at)
+        )
+        result = await self._session.execute(stmt)
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def get_by_name(self, wallet_id: UUID, name: str) -> Category | None:
         stmt = select(CategoryModel).where(
             CategoryModel.wallet_id == wallet_id,
             CategoryModel.name == name,
@@ -111,7 +131,11 @@ class CategoryRepositoryImpl(CategoryRepository):
         stmt = (
             update(CategoryModel)
             .where(CategoryModel.id == category_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow(), is_active=False)
+            .values(
+                deleted_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+                is_active=False,
+            )
         )
         await self._session.execute(stmt)
         await self._session.flush()

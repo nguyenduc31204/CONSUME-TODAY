@@ -2,10 +2,10 @@
 Category Entity — Spending/activity categories.
 Each wallet owns its own set of categories (isolated per wallet).
 """
-from typing import Optional
-from src.domain.entities.base import BaseEntity
+
 from uuid import UUID
 
+from src.domain.entities.base import BaseEntity
 
 # ── Default Categories ──────────────────────────────────
 DEFAULT_CATEGORIES = [
@@ -31,7 +31,7 @@ class Category(BaseEntity):
         emoji: str = "🏷️",
         is_default: bool = False,
         is_active: bool = True,
-        id: Optional[UUID] = None,
+        id: UUID | None = None,
         created_at=None,
         updated_at=None,
         deleted_at=None,
@@ -58,7 +58,13 @@ class Category(BaseEntity):
         self.name = name.strip()
         self.touch()
 
-    def update_style(self, *, icon: Optional[str] = None, color: Optional[str] = None, emoji: Optional[str] = None) -> None:
+    def update_style(
+        self,
+        *,
+        icon: str | None = None,
+        color: str | None = None,
+        emoji: str | None = None,
+    ) -> None:
         if icon is not None:
             self.icon = icon
         if color is not None:

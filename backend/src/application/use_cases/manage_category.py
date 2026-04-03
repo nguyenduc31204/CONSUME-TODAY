@@ -2,9 +2,10 @@
 ManageCategoryUseCase — Create, update, delete categories.
 Auto-creates 6 default categories on first wallet creation.
 """
+
 from uuid import UUID
 
-from src.domain.entities.category import Category, DEFAULT_CATEGORIES
+from src.domain.entities.category import DEFAULT_CATEGORIES, Category
 from src.domain.repositories.category_repository import CategoryRepository
 
 

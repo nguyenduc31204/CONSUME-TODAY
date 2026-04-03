@@ -3,8 +3,8 @@ Money Value Object — Immutable representation of monetary value.
 Always store as integer (cents/smallest unit) to avoid float errors.
 For VND: smallest unit is 1 VND (no cents).
 """
+
 from dataclasses import dataclass
-from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)

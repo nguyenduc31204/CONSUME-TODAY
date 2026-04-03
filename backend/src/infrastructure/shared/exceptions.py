@@ -2,7 +2,6 @@
 Business Exceptions — Domain-aware exceptions used throughout the application.
 These are caught by the global exception handler in FastAPI.
 """
-from typing import Optional
 
 
 class AppException(Exception):
@@ -14,10 +13,10 @@ class AppException(Exception):
 
     def __init__(
         self,
-        message: Optional[str] = None,
+        message: str | None = None,
         *,
-        code: Optional[str] = None,
-        details: Optional[dict] = None,
+        code: str | None = None,
+        details: dict | None = None,
     ) -> None:
         self.message = message or self.message
         self.code = code or self.code
@@ -34,8 +33,10 @@ class AppException(Exception):
 
 # ── 4xx Client Errors ──────────────────────────────────────
 
+
 class NotFoundException(AppException):
     """Resource not found (404)."""
+
     code = "ERR_NOT_FOUND"
     status_code = 404
     message = "Resource not found."
@@ -43,6 +44,7 @@ class NotFoundException(AppException):
 
 class UnauthorizedException(AppException):
     """Authentication required or failed (401)."""
+
     code = "ERR_UNAUTHORIZED"
     status_code = 401
     message = "Authentication required."
@@ -50,6 +52,7 @@ class UnauthorizedException(AppException):
 
 class ForbiddenException(AppException):
     """User lacks permission (403)."""
+
     code = "ERR_FORBIDDEN"
     status_code = 403
     message = "Permission denied."
@@ -57,6 +60,7 @@ class ForbiddenException(AppException):
 
 class ValidationException(AppException):
     """Request validation failed (422)."""
+
     code = "ERR_VALIDATION"
     status_code = 422
     message = "Validation error."
@@ -64,6 +68,7 @@ class ValidationException(AppException):
 
 class ConflictException(AppException):
     """Resource conflict, e.g. duplicate entry (409)."""
+
     code = "ERR_CONFLICT"
     status_code = 409
     message = "Resource already exists."
@@ -71,8 +76,10 @@ class ConflictException(AppException):
 
 # ── 5xx Server Errors ──────────────────────────────────────
 
+
 class StorageUnavailableException(AppException):
     """Image storage service unavailable (503)."""
+
     code = "ERR_STORAGE_UNAVAILABLE"
     status_code = 503
     message = "Image storage service is temporarily unavailable."
@@ -80,6 +87,7 @@ class StorageUnavailableException(AppException):
 
 class AiServiceException(AppException):
     """AI OCR service error (502)."""
+
     code = "ERR_AI_SERVICE"
     status_code = 502
     message = "AI service is temporarily unavailable."
@@ -87,6 +95,7 @@ class AiServiceException(AppException):
 
 class DatabaseException(AppException):
     """Database connection or query error (500)."""
+
     code = "ERR_DATABASE"
     status_code = 500
     message = "Database error occurred."

@@ -3,8 +3,8 @@ BaseEntity — Abstract base for all domain entities.
 Provides UUID primary key + audit columns (created_at, updated_at, deleted_at).
 NOT a dataclass — subclasses use dataclass WITHOUT inheriting from dataclass-generated __init__.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -17,15 +17,15 @@ class BaseEntity:
     id: UUID
     created_at: datetime
     updated_at: datetime
-    deleted_at: Optional[datetime]
+    deleted_at: datetime | None
 
     def __init__(
         self,
         *,
-        id: Optional[UUID] = None,
-        created_at: Optional[datetime] = None,
-        updated_at: Optional[datetime] = None,
-        deleted_at: Optional[datetime] = None,
+        id: UUID | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+        deleted_at: datetime | None = None,
     ) -> None:
         self.id = id if id is not None else uuid4()
         self.created_at = created_at if created_at is not None else datetime.utcnow()

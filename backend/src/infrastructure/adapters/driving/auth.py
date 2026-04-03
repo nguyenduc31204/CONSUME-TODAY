@@ -1,7 +1,8 @@
 """
 Auth Routes — Google OAuth 2.0 + Apple Sign-In + JWT.
 """
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from src.infrastructure.adapters.driving.main import success_response
@@ -25,6 +26,7 @@ class TokenResponse(BaseModel):
 
 
 # ── Auth Endpoints (Stubs — Phase 2 full implementation) ────
+
 
 @router.post("/auth/google", response_model=dict)
 async def auth_google(request: GoogleAuthRequest):

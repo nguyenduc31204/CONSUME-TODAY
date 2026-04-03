@@ -1,8 +1,8 @@
 """
 ImageRepository — Abstract interface for Image entity persistence.
 """
+
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import UUID
 
 from src.domain.entities.image import Image
@@ -17,7 +17,7 @@ class ImageRepository(ABC):
         ...
 
     @abstractmethod
-    async def get_by_id(self, image_id: UUID) -> Optional[Image]:
+    async def get_by_id(self, image_id: UUID) -> Image | None:
         """Retrieve an image by UUID."""
         ...
 

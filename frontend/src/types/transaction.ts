@@ -12,9 +12,13 @@ export interface Transaction {
   note: string | null
   ocr_confidence: number
   is_life_log: boolean
+  is_income: boolean
   transaction_status: string
   created_at: string
   updated_at: string
+  /** Denormalized from wallet/category for frontend convenience */
+  category_name?: string | null
+  wallet_name?: string | null
 }
 
 export interface TransactionListParams {
@@ -38,8 +42,11 @@ export interface TransactionCreateData {
 
 export interface TransactionUpdateData {
   amount?: number
-  category_id?: string
+  /** Category UUID, null to clear, or undefined to leave unchanged */
+  category_id?: string | null
   wallet_id?: string
   note?: string
   merchant_name?: string
+  /** True = income (adds balance to wallet), false/undefined = expense (deducts balance) */
+  is_income?: boolean
 }

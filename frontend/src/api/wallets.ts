@@ -32,4 +32,9 @@ export const walletsApi = {
   async delete(id: string): Promise<ApiResponse<void>> {
     return apiClient.delete(`/wallets/${id}`)
   },
+
+  /** Adjust wallet balance (positive = add income, negative = subtract expense) */
+  async adjustBalance(id: string, amount: number): Promise<ApiResponse<Wallet>> {
+    return apiClient.post(`/wallets/${id}/adjust-balance`, { amount })
+  },
 }

@@ -17,6 +17,7 @@ export interface WalletCreateData {
   description?: string
   color?: string
   icon?: string
+  initial_balance?: number
 }
 
 export interface WalletUpdateData {
@@ -24,4 +25,8 @@ export interface WalletUpdateData {
   description?: string
   color?: string
   icon?: string
+}
+
+export interface WalletBalanceAdjustment {
+  amount: number  // positive = add income, negative = subtract
 }

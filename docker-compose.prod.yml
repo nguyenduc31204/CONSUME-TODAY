@@ -1,0 +1,73 @@
+# ─────────────────────────────────────────────────────────────
+# MemoirFinance — Production Docker Compose
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ── PostgreSQL 16 ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: memoir_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-memoirfinance}
+      POSTGRES_USER: ${POSTGRES_USER:-memoir}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-memoir} -d ${POSTGRES_DB:-memoirfinance}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - memoir
+
+  # ── Backend API ─────────────────────────────────────────────
+  backend:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-memoir}/memoir-backend:latest
+    container_name: memoir_backend
+    restart: always
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoir}:${POSTGRES_PASSWORD:-CHANGE_ME}@postgres:5432/${POSTGRES_DB:-memoirfinance}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-memoirfinance}
+      DB_USER: ${POSTGRES_USER:-memoir}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-CHANGE_ME}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - memoir
+
+  # ── Frontend (Nginx) ────────────────────────────────────────
+  # Note: Nginx proxies /api/* to backend, serves static files for everything else
+  frontend:
+    image: ${DOCKER_REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-memoir}/memoir-frontend:latest
+    container_name: memoir_frontend
+    restart: always
+    # No direct port exposure — serve behind nginx or Cloudflare Proxy
+    depends_on:
+      - backend
+    networks:
+      - memoir
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  memoir:
+    driver: bridge

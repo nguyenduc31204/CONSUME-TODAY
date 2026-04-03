@@ -54,4 +54,12 @@ export const transactionsApi = {
   async delete(id: string): Promise<ApiResponse<void>> {
     return apiClient.delete(`/transactions/${id}`)
   },
+
+  /** Add income to a life-log entry (creates expense + adds balance to wallet) */
+  async addIncome(
+    id: string,
+    data: { amount: number; wallet_id?: string; note?: string },
+  ): Promise<ApiResponse<Transaction>> {
+    return apiClient.post<Transaction>(`/transactions/${id}/add-income`, data)
+  },
 }

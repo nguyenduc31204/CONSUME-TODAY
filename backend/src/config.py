@@ -2,8 +2,10 @@
 Pydantic Settings — MemoirFinance Backend Configuration
 All env vars must be defined here. Loaded from .env or environment.
 """
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -21,7 +23,9 @@ class Settings(BaseSettings):
     app_base_url: str = "http://localhost:8000"
 
     # ── Database ────────────────────────────────────
-    database_url: str = "postgresql+asyncpg://memoir:memoir@localhost:5432/memoirfinance"
+    database_url: str = (
+        "postgresql+asyncpg://memoir:memoir@localhost:5432/memoirfinance"
+    )
     db_host: str = "localhost"
     db_port: int = 5432
     db_name: str = "memoirfinance"
@@ -33,7 +37,7 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     jwt_private_key: str = ""
     jwt_public_key: str = ""
-    access_token_expire_minutes: int = 15
+    access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
     # ── Cloudflare R2 / S3 ─────────────────────────
@@ -46,6 +50,9 @@ class Settings(BaseSettings):
     # ── AI ─────────────────────────────────────────
     anthropic_api_key: str = ""
     claude_api_url: str = "https://api.anthropic.com"
+    google_gemini_api_key: str = ""
+    # Which AI provider to use: "gemini" (free, recommended) or "claude" (paid, more accurate)
+    ai_provider: str = "gemini"
 
     @property
     def cors_origins_list(self) -> list[str]:

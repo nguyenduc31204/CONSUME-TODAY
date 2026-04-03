@@ -1,6 +1,7 @@
 """
 Response DTOs — Image-related Pydantic models for API responses.
 """
+
 from datetime import datetime
 from uuid import UUID
 

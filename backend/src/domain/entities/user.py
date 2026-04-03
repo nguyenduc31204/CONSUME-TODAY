@@ -2,9 +2,10 @@
 User Entity — Represents a user in the system.
 Supports social login (Google/Apple) and email/password authentication.
 """
-from typing import Optional
-from src.domain.entities.base import BaseEntity
+
 from uuid import UUID
+
+from src.domain.entities.base import BaseEntity
 
 
 class User(BaseEntity):
@@ -15,13 +16,13 @@ class User(BaseEntity):
         *,
         email: str,
         name: str,
-        avatar_url: Optional[str] = None,
-        google_sub: Optional[str] = None,
-        apple_sub: Optional[str] = None,
-        hashed_password: Optional[str] = None,
+        avatar_url: str | None = None,
+        google_sub: str | None = None,
+        apple_sub: str | None = None,
+        hashed_password: str | None = None,
         is_email_verified: bool = False,
         is_active: bool = True,
-        id: Optional[UUID] = None,
+        id: UUID | None = None,
         created_at=None,
         updated_at=None,
         deleted_at=None,
@@ -54,7 +55,9 @@ class User(BaseEntity):
         self.hashed_password = None
         self.touch()
 
-    def update_profile(self, *, name: Optional[str] = None, avatar_url: Optional[str] = None) -> None:
+    def update_profile(
+        self, *, name: str | None = None, avatar_url: str | None = None
+    ) -> None:
         if name is not None:
             self.name = name
         if avatar_url is not None:

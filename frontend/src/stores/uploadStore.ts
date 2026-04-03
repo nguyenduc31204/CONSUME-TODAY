@@ -13,6 +13,9 @@ interface UploadStore {
   /** User tapped card → open edit mode */
   startEditing: () => void
 
+  /** Exit edit mode → return to preview */
+  stopEditing: () => void
+
   /** Transition to saving (user confirmed or auto-saved) */
   startSaving: (data: UploadTransactionResponse) => void
 
@@ -37,6 +40,15 @@ export const useUploadStore = create<UploadStore>((set) => ({
     set((s) => {
       if (s.state.phase === 'preview') {
         return { state: { ...s.state, phase: 'editing' } }
+      }
+      return s
+    })
+  },
+
+  stopEditing: () => {
+    set((s) => {
+      if (s.state.phase === 'editing') {
+        return { state: { ...s.state, phase: 'preview' } }
       }
       return s
     })

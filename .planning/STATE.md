@@ -5,7 +5,7 @@
 See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 **Core value:** "Lưu giữ khoảnh khắc bằng hình ảnh, AI sẽ lo phần con số."
-**Current focus:** Phase 4: Frontend Core — ✅ COMPLETE
+**Current focus:** Phase 6: CI/CD + Deploy — In progress (auth expiry + edit profile)
 
 ---
 
@@ -17,7 +17,8 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 | 2. Backend Core | ✅ Complete | 4/4 | 2026-04-01 |
 | 3. AI OCR + Life Log | ✅ Complete | 3/3 | 2026-04-01 |
 | 4. Frontend Core | ✅ Complete | 3/3 | 2026-04-01 |
-| 5. Nhìn lại + Polish | ⏳ Not started | — | — |
+| 5. Nhìn lại + Polish | ✅ Complete | 3/3 | 2026-04-01 |
+| 6. CI/CD + Deploy | ⏳ Not started | 5 | — |
 
 ---
 
@@ -25,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Web App MVP | Feature_Truth spec: web-first, mobile after | ✅ Confirmed |
+| Web App hoàn chỉnh | Feature_Truth spec: web-first, mobile sau | ✅ Confirmed |
 | Hexagonal Architecture | Rule 01: Domain/Application/Infrastructure separation | ✅ Implemented |
 | React 19 + Vite + Tailwind v3 | Feature_Truth spec | ✅ Implemented |
 | FastAPI + SQLAlchemy + Alembic | Feature_Truth spec | ✅ Implemented |
@@ -33,6 +34,7 @@ See: `.planning/PROJECT.md` (updated 2026-04-01)
 | Flask-alembic → python-alembic | alembic/ folder shadowed package | ✅ Renamed to migrations/ |
 | Claude API for AI OCR | Few-shot prompting, JSON output | ✅ Implemented (claude-sonnet-4) |
 | Cloudflare R2 for image storage | S3-compatible + Pillow preprocessing | ✅ Implemented (async boto3) |
+| Phase 6: CI/CD + Deploy | Production infrastructure + GitHub Actions | 📋 Planned |
 | PostgreSQL UUID PK + audit cols | Rule 02: scalability + auditability | ✅ Migration ready |
 | venv + requirements.txt | User-specified: no uv, no Poetry | ✅ Confirmed |
 | Zero onboarding | Feature_Truth UX principle | ✅ Scaffolded (Phase 2) |
@@ -164,6 +166,70 @@ Backend: /api/v1/transactions/{id}/convert-to-expense ✅ Life log → expense c
 | POST | /api/v1/transactions/{id}/convert-to-expense | ✅ | Life log → financial expense |
 | DELETE | /api/v1/transactions/{id} | ✅ | Soft-delete |
 
+### Reports
+| Method | Path | Auth | Mô tả |
+|--------|------|------|-------|
+| GET | /api/v1/reports/summary | ✅ | Spending summary: total, by category (pie), by day (bar), vs previous period |
+
+### Users
+| Method | Path | Auth | Mô tả |
+|--------|------|------|-------|
+| GET | /api/v1/users/me/stats | ✅ | User stats: total_transactions, total_spent, total_images |
+
 ---
 
-*Last updated: 2026-04-01 after Phase 3 — ALL COMPLETE*
+## Phase 5 Execution Log
+
+| Plan | Status | Notes |
+|------|--------|-------|
+| 05-01 | ✅ Done | GET /api/v1/reports/summary — aggregation by category + by day + vs_previous_period + Reports.tsx (recharts PieChart + BarChart + period toggle) |
+| 05-02 | ✅ Done | GET /api/v1/users/me/stats + Profile.tsx upgrade (stats cards, joined month, avatar, nav) |
+| 05-03 | ✅ Done | Skeleton.tsx (PhotoCardSkeleton, CalendarSkeleton, StatsSkeleton) + Home/Journal wired to skeletons + memoir:focus-camera event + toast notifications (wallets/categories/transactions hooks already had toasts) |
+
+---
+
+## Verification Results (Phase 5)
+
+```
+Frontend: tsc --noEmit                              ✅ 0 TypeScript errors
+Frontend: npm run build                              ✅ 753KB JS (recharts included), 34KB CSS
+Backend: pytest tests/unit/                          ✅ 27/27 passed
+Backend: FastAPI app loads                            ✅
+Backend: GET /api/v1/reports/summary                 ✅ Registered
+Backend: GET /api/v1/users/me/stats                   ✅ Registered
+Frontend: Reports — PieChart (category spending)      ✅
+Frontend: Reports — BarChart (daily spending)         ✅
+Frontend: Reports — period toggle (week/month/last)  ✅
+Frontend: Profile — stats cards (transactions/spend)  ✅
+Frontend: Home — PhotoCardSkeleton loading           ✅
+Frontend: Journal — CalendarSkeleton loading         ✅
+Frontend: memoir:focus-camera event on empty state   ✅
+```
+
+---
+
+## Frontend Feature Summary (Phase 5)
+
+### Reports ("Nhìn Lại")
+- Period toggle: Tuần này / Tháng này / Tháng trước
+- Total spending card with gradient background + comparison vs previous period
+- PieChart: spending by category with legend
+- BarChart: spending by day
+- Empty state with camera CTA
+- Loading skeleton
+
+### Profile ("Cá Nhân")
+- User avatar card with joined month
+- 3-stat grid: total transactions, total spent (compact VND), total images
+- Navigation to wallet management, category management, settings
+
+### UX Polish
+- PhotoCardSkeleton for Home feed loading
+- CalendarSkeleton for Journal loading
+- StatsSkeleton for Profile loading
+- Empty state CTA button dispatches `memoir:focus-camera` → triggers camera FAB
+- All CRUD hooks have toast notifications
+
+---
+
+*Last updated: 2026-04-01 after Phase 5 — Preparing Phase 6*

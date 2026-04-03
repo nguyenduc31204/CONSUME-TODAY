@@ -35,21 +35,21 @@ Mọi thiết kế, quyết định ưu tiên hành vi chụp ảnh — không p
 ### Out of Scope
 
 - **HabitFriend (Thói quen trực quan)** — Loại hoàn toàn để giữ sản phẩm tập trung Life Log + Tài chính
-- **Offline mode** — Không nằm trong scope MVP
+- **Offline mode** — Không nằm trong scope
 - **Email/Password login** — Chỉ social login để tối giản
 - **Onboarding wizard** — Zero-friction, vào thẳng app
-- **Mobile app (iOS/Android)** — Web App MVP, mobile sau
-- **Push notifications** — Không trong MVP
-- **Shared wallets / Multi-tenant** — Sau MVP
-- **AI Parent-Children OCR (supermarket item-level)** — Sau MVP
-- **AI bank transfer OCR (Momo, VCB, ZaloPay)** — Sau MVP
-- **AI learns from corrections** — Sau MVP
-- **Visual Mosaic recap** — Biểu đồ truyền thống trong MVP, mosaic sau
-- **Wishlist** — Sau MVP
+- **Mobile app (iOS/Android)** — Web App hoàn chỉnh, mobile sau
+- **Push notifications** — Sau launch
+- **Shared wallets / Multi-tenant** — Sau launch
+- **AI Parent-Children OCR (supermarket item-level)** — Sau launch
+- **AI bank transfer OCR (Momo, VCB, ZaloPay)** — Sau launch
+- **AI learns from corrections** — Sau launch
+- **Visual Mosaic recap** — Biểu đồ truyền thống trong v1.0, mosaic sau
+- **Wishlist** — Sau launch
 
 ## Context
 
-- **Sản phẩm:** MemoirFinance v1.0 (Web App MVP)
+- **Sản phẩm:** MemoirFinance v1.0 (Web App hoàn chỉnh)
 - **Thị trường:** Việt Nam — người dùng trẻ, quen chụp ảnh, ghét nhập liệu
 - **Đã có:** Feature_Truth.md (Product spec chi tiết), docs/architecture.md (Hexagonal/DDD), 7 rule files (coding conventions)
 - **Triết lý thiết kế:**
@@ -59,11 +59,11 @@ Mọi thiết kế, quyết định ưu tiên hành vi chụp ảnh — không p
 
 ## Constraints
 
-- **Platform MVP:** Web App — Mobile sau MVP
+- **Platform:** Web App hoàn chỉnh — Mobile sau
 - **Tech Stack:** React 19 + Vite + Tailwind (frontend), FastAPI + PostgreSQL (backend), Claude API (AI OCR)
 - **Offline:** Không support — đây là Web App đơn thuần
 - **Monetization:** Hoàn toàn miễn phí — không paywall, không giới hạn tính năng
-- **AI Provider:** Claude API (Anthropic) cho MVP — dễ implement, few-shot prompting
+- **AI Provider:** Claude API (Anthropic) — few-shot prompting, dễ validate
 - **Package Manager (Python):** venv + requirements.txt — không uv, không Poetry
 - **Package Manager (Node):** npm — tiêu chuẩn
 
@@ -71,17 +71,17 @@ Mọi thiết kế, quyết định ưu tiên hành vi chụp ảnh — không p
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Web App MVP (không mobile) | Feature_Truth spec, giảm scope ban đầu | — Pending |
+| Web App hoàn chỉnh (không mobile) | Feature_Truth spec, web-first | — Pending |
 | Hexagonal Architecture + DDD | Cô lập business logic khỏi framework, dễ mở rộng | — Pending |
 | React 19 + Vite + Tailwind v4 | Feature_Truth spec, modern stack | — Pending |
 | FastAPI + SQLAlchemy + Alembic | Feature_Truth spec, Python ecosystem | — Pending |
-| Firebase Auth (Google + Apple) | Feature_Truth spec — social login only | — Pending |
+| Google OAuth 2.0 + Custom JWT (RS256) | Feature_Truth spec — social login only | — Pending |
 | Claude API cho AI OCR | Few-shot prompting, JSON output, dễ validate | — Pending |
-| AWS S3 cho image storage | Feature_Truth spec, production-ready | — Pending |
+| Cloudflare R2 cho image storage | S3-compatible + Pillow preprocessing | — Pending |
 | PostgreSQL với UUID PK + audit cols | Rule 02 — scalability, auditability | — Pending |
 | Zero onboarding | Feature_Truth — UX principle | — Pending |
 | AI Auto-save sau 3s | Feature_Truth — zero-tap principle | — Pending |
 
 ---
 
-*Last updated: 2026-04-01 after initialization*
+*Last updated: 2026-04-01 — Updated for Phase 6 CI/CD, removed MVP language*

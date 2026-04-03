@@ -2,8 +2,8 @@
 Transaction Entity — Represents a captured expense or life-log entry.
 Core of the MemoirFinance experience.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from src.domain.entities.base import BaseEntity
@@ -21,18 +21,19 @@ class Transaction(BaseEntity):
         *,
         user_id: UUID,
         wallet_id: UUID,
-        category_id: Optional[UUID] = None,
-        image_url: Optional[str] = None,
-        thumbnail_url: Optional[str] = None,
-        merchant_name: Optional[str] = None,
+        category_id: UUID | None = None,
+        image_url: str | None = None,
+        thumbnail_url: str | None = None,
+        merchant_name: str | None = None,
         amount: int = 0,
         currency: str = "VND",
-        transaction_date: Optional[datetime] = None,
-        note: Optional[str] = None,
+        transaction_date: datetime | None = None,
+        note: str | None = None,
         ocr_confidence: float = 0.0,
         is_life_log: bool = False,
+        is_income: bool = False,
         transaction_status: str = "pending",
-        id: Optional[UUID] = None,
+        id: UUID | None = None,
         created_at=None,
         updated_at=None,
         deleted_at=None,
@@ -55,6 +56,7 @@ class Transaction(BaseEntity):
         self.note = note
         self.ocr_confidence = ocr_confidence
         self.is_life_log = is_life_log
+        self.is_income = is_income
         self.transaction_status = transaction_status
 
     # ── Business Logic ─────────────────────────────────

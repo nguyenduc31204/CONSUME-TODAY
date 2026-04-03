@@ -2,8 +2,8 @@
 UserRepositoryImpl — SQLAlchemy async implementation of UserRepository.
 Driven adapter: persistence.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -36,7 +36,7 @@ class UserRepositoryImpl(UserRepository):
             deleted_at=model.deleted_at,
         )
 
-    def _to_model(self, entity: User, model: Optional[UserModel] = None) -> UserModel:
+    def _to_model(self, entity: User, model: UserModel | None = None) -> UserModel:
         if model is None:
             model = UserModel()
         model.id = entity.id
@@ -60,7 +60,7 @@ class UserRepositoryImpl(UserRepository):
         await self._session.refresh(model)
         return self._to_entity(model)
 
-    async def get_by_id(self, user_id: UUID) -> Optional[User]:
+    async def get_by_id(self, user_id: UUID) -> User | None:
         stmt = select(UserModel).where(
             UserModel.id == user_id,
             UserModel.deleted_at.is_(None),
@@ -69,7 +69,7 @@ class UserRepositoryImpl(UserRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> User | None:
         stmt = select(UserModel).where(
             UserModel.email == email,
             UserModel.deleted_at.is_(None),
@@ -78,7 +78,7 @@ class UserRepositoryImpl(UserRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_by_google_sub(self, google_sub: str) -> Optional[User]:
+    async def get_by_google_sub(self, google_sub: str) -> User | None:
         stmt = select(UserModel).where(
             UserModel.google_sub == google_sub,
             UserModel.deleted_at.is_(None),
@@ -87,7 +87,7 @@ class UserRepositoryImpl(UserRepository):
         model = result.scalar_one_or_none()
         return self._to_entity(model) if model else None
 
-    async def get_by_apple_sub(self, apple_sub: str) -> Optional[User]:
+    async def get_by_apple_sub(self, apple_sub: str) -> User | None:
         stmt = select(UserModel).where(
             UserModel.apple_sub == apple_sub,
             UserModel.deleted_at.is_(None),

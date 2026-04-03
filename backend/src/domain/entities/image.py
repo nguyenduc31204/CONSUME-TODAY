@@ -1,8 +1,7 @@
 """
 Image Entity — Represents an uploaded image stored in R2.
 """
-from datetime import datetime
-from typing import Optional
+
 from uuid import UUID
 
 from src.domain.entities.base import BaseEntity
@@ -16,14 +15,14 @@ class Image(BaseEntity):
         *,
         user_id: UUID,
         url: str,
-        thumbnail_url: Optional[str] = None,
+        thumbnail_url: str | None = None,
         filename: str,
         mime_type: str,
         file_size: int,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        storage_key: Optional[str] = None,
-        id: Optional[UUID] = None,
+        width: int | None = None,
+        height: int | None = None,
+        storage_key: str | None = None,
+        id: UUID | None = None,
         created_at=None,
         updated_at=None,
         deleted_at=None,

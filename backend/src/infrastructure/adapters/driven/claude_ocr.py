@@ -2,14 +2,12 @@
 Claude OCR Adapter — Driven adapter for Anthropic Claude API.
 Implements IAiOcrPort with few-shot prompting for Vietnamese receipts.
 """
+
 import base64
-import io
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional
-from uuid import UUID
 
-import anthropic
 from anthropic import AsyncAnthropic
 
 from src.config import get_settings
@@ -79,11 +77,13 @@ Output: {"is_receipt":false,"merchant":null,"amount":null,"date":null,"category"
 
 # ── Result dataclass ─────────────────────────────────────────
 
+
 @dataclass
 class OcrResult:
     """
     Structured result from Claude OCR analysis.
     """
+
     merchant: Optional[str]
     amount: Optional[int]  # VND
     confidence: float
@@ -103,6 +103,7 @@ class OcrResult:
 
 
 # ── Adapter ──────────────────────────────────────────────────
+
 
 class ClaudeOcrAdapter:
     """

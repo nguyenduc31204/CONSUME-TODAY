@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { categoriesApi } from '@/api/categories'
 import type { CategoryCreateData, CategoryUpdateData } from '@/types/category'
 import { useUiStore } from '@/stores/uiStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /** Hook: List categories */
 export function useCategories(walletId?: string) {
@@ -22,7 +23,10 @@ export function useCreateCategory() {
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
-    mutationFn: async (data: CategoryCreateData) => categoriesApi.create(data),
+    mutationFn: async (data: CategoryCreateData) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
+      return categoriesApi.create(data)
+    },
     onSuccess: (response) => {
       if (response.success) {
         addToast('Đã tạo danh mục mới', 'success')
@@ -43,8 +47,10 @@ export function useUpdateCategory() {
   const addToast = useUiStore((s) => s.addToast)
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: CategoryUpdateData }) =>
-      categoriesApi.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: CategoryUpdateData }) => {
+      if (!useAuthStore.getState().accessToken) throw new Error('Vui lòng đăng nhập')
+      return categoriesApi.update(id, data)
+    },
     onSuccess: (response) => {
       if (response.success) {
         addToast('Đã cập nhật danh mục', 'success')

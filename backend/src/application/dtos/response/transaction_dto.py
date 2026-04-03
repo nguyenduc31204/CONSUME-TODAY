@@ -1,8 +1,8 @@
 """
 Response DTOs — Pydantic models for Transaction API responses.
 """
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -14,18 +14,23 @@ class TransactionResponse(BaseModel):
     id: UUID
     user_id: UUID
     wallet_id: UUID
-    category_id: Optional[UUID] = None
-    image_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    merchant_name: Optional[str] = None
+    category_id: UUID | None = None
+    image_url: str | None = None
+    thumbnail_url: str | None = None
+    merchant_name: str | None = None
     amount: int
     currency: str = "VND"
-    transaction_date: Optional[datetime] = None
-    note: Optional[str] = None
+    transaction_date: datetime | None = None
+    note: str | None = None
     ocr_confidence: float
     is_life_log: bool
+    is_income: bool = False
+    transaction_status: str = "pending"
     created_at: datetime
     updated_at: datetime
+    # Denormalized for frontend convenience
+    category_name: str | None = None
+    wallet_name: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -45,11 +50,12 @@ class WalletResponse(BaseModel):
     id: UUID
     user_id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     color: str
     icon: str
     is_default: bool
     is_personal: bool
+    balance: int
     created_at: datetime
     updated_at: datetime
 
@@ -79,7 +85,8 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     name: str
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
+    has_password: bool = False  # Computed: user.has_password()
     is_active: bool
     created_at: datetime
     updated_at: datetime
