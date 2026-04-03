@@ -755,12 +755,13 @@ async def download_transaction_image(
 
     # Extract storage key from R2 URL: https://pub-xxx.r2.dev/<key>
     from src.config import get_settings
+
     settings = get_settings()
     r2_public = settings.r2_public_url.rstrip("/")
     if not transaction.image_url.startswith(r2_public + "/"):
         raise NotFoundException(message="Image URL not found in storage.")
 
-    storage_key = transaction.image_url[len(r2_public) + 1:]
+    storage_key = transaction.image_url[len(r2_public) + 1 :]
 
     storage = R2StorageAdapter()
     try:

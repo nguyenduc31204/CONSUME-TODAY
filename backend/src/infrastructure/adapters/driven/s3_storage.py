@@ -292,7 +292,9 @@ class R2StorageAdapter:
 
         return await loop.run_in_executor(_executor, _do)
 
-    async def get_presigned_get_url(self, storage_key: str, expires_in: int = 3600) -> str:
+    async def get_presigned_get_url(
+        self, storage_key: str, expires_in: int = 3600
+    ) -> str:
         """Generate a presigned GET URL for public access to private R2 objects."""
         loop = __import__("asyncio").get_running_loop()
 

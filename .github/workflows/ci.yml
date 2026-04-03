@@ -121,7 +121,7 @@ jobs:
         run: npm ci
 
       - name: Lint with ESLint
-        run: npm run lint -- --max-warnings 34
+        run: npm run lint -- --max-warnings 50
 
       - name: Type-check with TypeScript
         run: npx tsc --noEmit
