@@ -34,7 +34,9 @@ class GoogleOAuthService:
         self._client_id = settings.google_client_id
         self._client_secret = settings.google_client_secret
 
-    async def exchange_code_for_tokens(self, code: str) -> tuple[str, str]:
+    async def exchange_code_for_tokens(
+        self, code: str, redirect_uri: str = "postmessage"
+    ) -> tuple[str, str]:
         """
         Exchange authorization code for access_token + id_token.
         Returns (access_token, id_token).
@@ -49,7 +51,7 @@ class GoogleOAuthService:
                         "client_id": self._client_id,
                         "client_secret": self._client_secret,
                         "grant_type": "authorization_code",
-                        "redirect_uri": "postmessage",  # SPA flow: use postmessage
+                        "redirect_uri": redirect_uri,
                     },
                     headers={"Accept": "application/json"},
                 )

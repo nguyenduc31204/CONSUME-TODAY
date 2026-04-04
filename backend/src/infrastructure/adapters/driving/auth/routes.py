@@ -53,6 +53,7 @@ def _get_user_id(authorization: str = Header(...)) -> UUID:
 
 class GoogleLoginRequest(BaseModel):
     code: str  # Authorization code from Google OAuth flow
+    redirect_uri: str  # Must match what was used when requesting the code
 
 
 class RegisterRequest(BaseModel):
@@ -168,7 +169,9 @@ async def google_login(
     First login: auto-creates "Ví cá nhân" wallet + 6 default categories.
     """
     uc = _build_auth_uc(db)
-    user, access_token, refresh_token = await uc.authenticate_with_google(request.code)
+    user, access_token, refresh_token = await uc.authenticate_with_google(
+        request.code, redirect_uri=request.redirect_uri
+    )
 
     settings = get_settings()
     return {

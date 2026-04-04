@@ -201,13 +201,13 @@ export default function Home() {
               Thêm nhanh
             </button>
             {/* Camera FAB — triggers upload */}
-            <button
+            {/* <button
               onClick={() => window.dispatchEvent(new CustomEvent('memoir:focus-camera'))}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg shadow-black/20 transition-transform active:scale-95 hover:scale-105"
               aria-label="Chụp ảnh"
             >
               <Camera className="h-5 w-5 text-memoir-600" />
-            </button>
+            </button> */}
           </div>
         </div>
 

@@ -36,7 +36,7 @@ export default function AuthCallback() {
     }
 
     const doAuth = async () => {
-      const res = await authApi.googleAuth(code)
+      const res = await authApi.googleAuth(code, `${window.location.origin}/auth/callback`)
 
       if (!res.success || !res.data) {
         addToast(res.message || 'Đăng nhập thất bại', 'error')

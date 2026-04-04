@@ -69,8 +69,11 @@ async def toggle_like(
             # Race condition: another request inserted the like between our check
             # and our insert. The DB already has the like + correct count.
             # Just remove the duplicate and return liked=False (toggle off).
-            # SQLAlchemy wraps asyncpg errors under .orig (not __cause__)
-            underlying = getattr(exc, "orig", None) or getattr(exc, "__cause__", None)
+            # asyncpg exceptions inherit from Warning (not Exception),
+            # so unwrap via SQLAlchemy's .orig attribute.
+            import asyncpg
+
+            underlying = getattr(exc, "orig", None)
             if isinstance(underlying, asyncpg.UniqueViolationError):
                 await repo.remove_like(post_id, user_id)
                 liked = False
