@@ -17,6 +17,8 @@ class TokenPayload(BaseModel):
     type: str
     exp: datetime
     iat: datetime
+    name: str | None = None
+    email: str | None = None
 
 
 class JWTService:
@@ -41,13 +43,20 @@ class JWTService:
         self._access_expire = settings.access_token_expire_minutes
         self._refresh_expire = settings.refresh_token_expire_days
 
-    def create_access_token(self, user_id: UUID) -> str:
+    def create_access_token(
+        self,
+        user_id: UUID,
+        name: str | None = None,
+        email: str | None = None,
+    ) -> str:
         now = datetime.utcnow()
         payload = {
             "sub": str(user_id),
             "type": "access",
             "iat": now,
             "exp": now + timedelta(minutes=self._access_expire),
+            "name": name,
+            "email": email,
         }
         return jwt.encode(payload, self._sign_key, algorithm=self._algorithm)
 
@@ -61,8 +70,16 @@ class JWTService:
         }
         return jwt.encode(payload, self._sign_key, algorithm=self._algorithm)
 
-    def create_token_pair(self, user_id: UUID) -> tuple[str, str]:
-        return self.create_access_token(user_id), self.create_refresh_token(user_id)
+    def create_token_pair(
+        self,
+        user_id: UUID,
+        name: str | None = None,
+        email: str | None = None,
+    ) -> tuple[str, str]:
+        return (
+            self.create_access_token(user_id, name=name, email=email),
+            self.create_refresh_token(user_id),
+        )
 
     def verify_token(self, token: str) -> TokenPayload | None:
         try:
