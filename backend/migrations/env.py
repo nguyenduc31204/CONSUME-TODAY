@@ -63,6 +63,7 @@ async def run_async_migrations() -> None:
     )
 
     async with connectable.connect() as connection:
+        # Only reflect existing tables (Alembic manages schema — do NOT run create_all here)
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
