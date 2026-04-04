@@ -4,16 +4,17 @@ import type { CategoryCreateData, CategoryUpdateData } from '@/types/category'
 import { useUiStore } from '@/stores/uiStore'
 import { useAuthStore } from '@/stores/authStore'
 
-/** Hook: List categories */
-export function useCategories(walletId?: string) {
+/** Hook: List categories — always enabled (no walletId = list all user categories) */
+export function useCategories(_walletId?: string) {
+  const accessToken = useAuthStore((s) => s.accessToken)
   return useQuery({
-    queryKey: ['categories', walletId],
+    queryKey: ['categories'],
     queryFn: async () => {
-      const response = await categoriesApi.list(walletId)
+      const response = await categoriesApi.list()
       if (!response.success) throw new Error(response.message)
       return response.data
     },
-    enabled: false,
+    enabled: !!accessToken,
   })
 }
 

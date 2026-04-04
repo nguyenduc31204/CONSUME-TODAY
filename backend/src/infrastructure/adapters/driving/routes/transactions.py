@@ -5,6 +5,8 @@ Transaction Routes — Full CRUD + Phase 3: Upload + OCR + Auto-Save + Life Log.
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from src.infrastructure.shared.datetime_utils import utc_now
+
 from fastapi import APIRouter, Depends, File, Header, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -153,6 +155,7 @@ class TransactionUpdateRequest(BaseModel):
     amount: int | None = None
     currency: str | None = None
     transaction_date: datetime | None = None
+    transaction_time: str | None = None
     note: str | None = None
     is_income: bool | None = (
         None  # True = income (adds balance), False/unset = expense (deducts)
@@ -165,6 +168,20 @@ class TransactionConvertRequest(BaseModel):
     amount: int
     category_id: UUID
     merchant_name: str | None = None
+
+
+class CreateManualTransactionRequest(BaseModel):
+    """Request to create a manual transaction (no image)."""
+
+    amount: int
+    merchant_name: str | None = None
+    category_id: UUID | None = None
+    wallet_id: UUID | None = None
+    transaction_date: str | None = None
+    transaction_time: str | None = None
+    note: str | None = None
+    is_income: bool = False
+    is_life_log: bool = False
 
 
 # ── Routes ───────────────────────────────────────────────────
@@ -189,7 +206,7 @@ async def list_transactions(
     - start_date: >= start of that day (local)
     - end_date:   <  start of next day (local)  → covers the entire end_date day
 
-    DB stores all datetimes as UTC (datetime.utcnow()), so we convert
+    DB stores all datetimes as UTC (utc_now()), so we convert
     local date strings to UTC-aware datetimes before querying.
     """
     _start: datetime | None = None
@@ -340,7 +357,7 @@ async def upload_and_capture(
             merchant_name=ocr_result.reason,
             amount=0,
             currency="VND",
-            transaction_date=datetime.utcnow().replace(
+            transaction_date=utc_now().replace(
                 hour=0, minute=0, second=0, microsecond=0
             ),
             ocr_confidence=ocr_result.confidence,
@@ -370,7 +387,7 @@ async def upload_and_capture(
                     tzinfo=None
                 )
                 if ocr_result.date
-                else datetime.utcnow().replace(
+                else utc_now().replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )
             ),
@@ -426,6 +443,69 @@ async def upload_and_capture(
     }
 
     return {"success": True, "data": response_data, "message": ""}
+
+
+# ── Phase 9c: Manual Transactions (no image) ───────────────────
+
+
+@router.post("/transactions/manual")
+async def create_manual_transaction(
+    request: CreateManualTransactionRequest,
+    user_id: UUID = Depends(_get_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Create a manual transaction without uploading an image.
+    Used by the "Thêm nhanh" flow on the Home page.
+    """
+    # Resolve wallet
+    wallet_repo = WalletRepositoryImpl(db)
+    if request.wallet_id:
+        wallet = await wallet_repo.get_by_id(request.wallet_id)
+        if wallet is None or wallet.user_id != user_id:
+            raise ForbiddenException(message="Invalid wallet.")
+    else:
+        wallet = await wallet_repo.get_default(user_id)
+        if wallet is None:
+            raise NotFoundException(message="No default wallet found.")
+    wallet_id = wallet.id
+
+    # Parse date
+    tx_date = None
+    if request.transaction_date:
+        try:
+            tx_date = datetime.strptime(request.transaction_date, "%Y-%m-%d")
+        except ValueError:
+            raise ForbiddenException(message="Invalid date format. Use YYYY-MM-DD.")
+
+    # Build transaction
+    transaction = Transaction(
+        user_id=user_id,
+        wallet_id=wallet_id,
+        category_id=request.category_id,
+        merchant_name=request.merchant_name,
+        amount=request.amount,
+        currency="VND",
+        transaction_date=tx_date,
+        transaction_time=request.transaction_time,
+        note=request.note,
+        ocr_confidence=0.0,
+        is_life_log=request.is_life_log,
+        is_income=request.is_income,
+        is_manual=True,
+        transaction_status=Transaction.STATUS_CONFIRMED,
+    )
+
+    # Persist
+    repo = _get_transaction_repo(db)
+    saved = await repo.save(transaction)
+
+    # Sync wallet balance
+    await _sync_wallet_balance(db, wallet_id, -(saved.amount) if not saved.is_income else saved.amount)
+
+    wallets, categories = await _build_name_cache(db, user_id)
+    tx_data = _enrich_tx(saved, wallets, categories)
+    return {"success": True, "data": tx_data, "message": "Giao dịch đã được tạo."}
 
 
 @router.post("/transactions/{transaction_id}/confirm")
@@ -705,6 +785,9 @@ async def update_transaction(
     if request.transaction_date is not None:
         td = request.transaction_date
         transaction.transaction_date = td.replace(tzinfo=None) if td.tzinfo else td
+
+    if request.transaction_time is not None:
+        transaction.transaction_time = request.transaction_time
 
     if request.note is not None:
         transaction.note = request.note

@@ -73,7 +73,7 @@ class Task(BaseEntity):
         if self.status == self.STATUS_CANCELLED:
             raise ValueError("Cannot complete a cancelled task.")
         self.status = self.STATUS_COMPLETED
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now(timezone.utc)
 
     def uncomplete(self) -> None:
         """Reopen a completed task."""

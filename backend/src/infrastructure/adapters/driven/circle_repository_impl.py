@@ -14,6 +14,7 @@ from src.domain.entities.circle_like import CircleLike
 from src.domain.entities.circle_member import CircleMember
 from src.domain.entities.circle_post import CirclePost
 from src.domain.repositories.circle_repository import CircleRepository
+from src.infrastructure.shared.datetime_utils import to_naive, utc_now
 
 
 def _map_circle(model) -> Circle:
@@ -26,9 +27,9 @@ def _map_circle(model) -> Circle:
         visibility=model.visibility,
         circle_type=model.circle_type,
         max_members=model.max_members,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-        deleted_at=model.deleted_at,
+        created_at=to_naive(model.created_at),
+        updated_at=to_naive(model.updated_at),
+        deleted_at=to_naive(model.deleted_at),
     )
 
 
@@ -38,10 +39,11 @@ def _map_member(model) -> CircleMember:
         circle_id=model.circle_id,
         user_id=model.user_id,
         role=model.role,
-        joined_at=model.joined_at,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-        deleted_at=model.deleted_at,
+        status=getattr(model, 'member_status', 'approved'),
+        joined_at=to_naive(model.joined_at),
+        created_at=to_naive(model.created_at),
+        updated_at=to_naive(model.updated_at),
+        deleted_at=to_naive(model.deleted_at),
     )
 
 
@@ -56,9 +58,9 @@ def _map_post(model) -> CirclePost:
         is_visible_link=model.is_visible_link,
         like_count=model.like_count,
         comment_count=model.comment_count,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-        deleted_at=model.deleted_at,
+        created_at=to_naive(model.created_at),
+        updated_at=to_naive(model.updated_at),
+        deleted_at=to_naive(model.deleted_at),
     )
 
 
@@ -68,9 +70,9 @@ def _map_comment(model) -> CircleComment:
         post_id=model.post_id,
         author_id=model.author_id,
         content=model.content,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
-        deleted_at=model.deleted_at,
+        created_at=to_naive(model.created_at),
+        updated_at=to_naive(model.updated_at),
+        deleted_at=to_naive(model.deleted_at),
     )
 
 
@@ -128,7 +130,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def list_circles_for_user(self, user_id: UUID) -> list[Circle]:
         from src.infrastructure.adapters.driven.database import CircleMemberModel, CircleModel
-        # Get circles where user is owner OR member
+        # Get circles where user is owner OR approved member
         stmt = (
             select(CircleModel)
             .outerjoin(
@@ -137,6 +139,7 @@ class CircleRepositoryImpl(CircleRepository):
                     CircleMemberModel.circle_id == CircleModel.id,
                     CircleMemberModel.user_id == user_id,
                     CircleMemberModel.deleted_at.is_(None),
+                    CircleMemberModel.member_status == "approved",
                 ),
             )
             .where(
@@ -187,7 +190,7 @@ class CircleRepositoryImpl(CircleRepository):
                 description=circle.description,
                 cover_image_url=circle.cover_image_url,
                 visibility=circle.visibility,
-                updated_at=datetime.utcnow(),
+                updated_at=utc_now(),
             )
         )
         await self._session.execute(stmt)
@@ -199,7 +202,7 @@ class CircleRepositoryImpl(CircleRepository):
         stmt = (
             update(CircleModel)
             .where(CircleModel.id == circle_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()
@@ -213,7 +216,8 @@ class CircleRepositoryImpl(CircleRepository):
             circle_id=member.circle_id,
             user_id=member.user_id,
             role=member.role,
-            joined_at=member.joined_at,
+            member_status=member.status,
+            joined_at=to_naive(member.joined_at),
         )
         self._session.add(model)
         await self._session.flush()
@@ -238,6 +242,17 @@ class CircleRepositoryImpl(CircleRepository):
         stmt = select(CircleMemberModel).where(
             CircleMemberModel.circle_id == circle_id,
             CircleMemberModel.deleted_at.is_(None),
+            CircleMemberModel.member_status == "approved",
+        )
+        result = await self._session.execute(stmt)
+        return [_map_member(m) for m in result.scalars().all()]
+
+    async def list_pending_members(self, circle_id: UUID) -> list[CircleMember]:
+        from src.infrastructure.adapters.driven.database import CircleMemberModel
+        stmt = select(CircleMemberModel).where(
+            CircleMemberModel.circle_id == circle_id,
+            CircleMemberModel.deleted_at.is_(None),
+            CircleMemberModel.member_status == "pending",
         )
         result = await self._session.execute(stmt)
         return [_map_member(m) for m in result.scalars().all()]
@@ -247,8 +262,26 @@ class CircleRepositoryImpl(CircleRepository):
         stmt = select(func.count()).select_from(CircleMemberModel).where(
             CircleMemberModel.circle_id == circle_id,
             CircleMemberModel.deleted_at.is_(None),
+            CircleMemberModel.member_status == "approved",
         )
         return (await self._session.execute(stmt)).scalar_one()
+
+    async def update_member_status(
+        self, circle_id: UUID, user_id: UUID, status: str
+    ) -> CircleMember | None:
+        from src.infrastructure.adapters.driven.database import CircleMemberModel
+        stmt = (
+            update(CircleMemberModel)
+            .where(
+                CircleMemberModel.circle_id == circle_id,
+                CircleMemberModel.user_id == user_id,
+                CircleMemberModel.deleted_at.is_(None),
+            )
+            .values(member_status=status, updated_at=utc_now())
+        )
+        await self._session.execute(stmt)
+        await self._session.flush()
+        return await self.get_member(circle_id, user_id)
 
     async def remove_member(self, circle_id: UUID, user_id: UUID) -> None:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
@@ -258,7 +291,7 @@ class CircleRepositoryImpl(CircleRepository):
                 CircleMemberModel.circle_id == circle_id,
                 CircleMemberModel.user_id == user_id,
             )
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()
@@ -366,7 +399,7 @@ class CircleRepositoryImpl(CircleRepository):
                 is_visible_link=post.is_visible_link,
                 like_count=post.like_count,
                 comment_count=post.comment_count,
-                updated_at=datetime.utcnow(),
+                updated_at=utc_now(),
             )
         )
         await self._session.execute(stmt)
@@ -378,7 +411,7 @@ class CircleRepositoryImpl(CircleRepository):
         stmt = (
             update(CirclePostModel)
             .where(CirclePostModel.id == post_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()
@@ -426,7 +459,7 @@ class CircleRepositoryImpl(CircleRepository):
         stmt = (
             update(CircleCommentModel)
             .where(CircleCommentModel.id == comment_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()
@@ -453,7 +486,7 @@ class CircleRepositoryImpl(CircleRepository):
                 CircleLikeModel.post_id == post_id,
                 CircleLikeModel.user_id == user_id,
             )
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()

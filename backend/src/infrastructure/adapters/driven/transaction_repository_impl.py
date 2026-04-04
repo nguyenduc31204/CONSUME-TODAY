@@ -3,7 +3,7 @@ TransactionRepositoryImpl — SQLAlchemy async implementation of TransactionRepo
 Driven adapter: persistence.
 """
 
-from datetime import datetime
+from datetime import datetime, time as time_type
 from uuid import UUID
 
 from sqlalchemy import and_, func, select, update
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.transaction import Transaction
 from src.domain.repositories.transaction_repository import TransactionRepository
 from src.infrastructure.adapters.driven.database import TransactionModel
+from src.infrastructure.shared.datetime_utils import to_naive, utc_now
 
 
 class TransactionRepositoryImpl(TransactionRepository):
@@ -32,14 +33,16 @@ class TransactionRepositoryImpl(TransactionRepository):
             amount=model.amount,
             currency=model.currency,
             transaction_date=model.transaction_date,
+            transaction_time=model.transaction_time.strftime("%H:%M") if model.transaction_time else None,
             note=model.note,
             ocr_confidence=model.ocr_confidence,
             is_life_log=model.is_life_log,
             is_income=model.is_income,
+            is_manual=getattr(model, 'is_manual', False),
             transaction_status=model.transaction_status,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-            deleted_at=model.deleted_at,
+            created_at=to_naive(model.created_at),
+            updated_at=to_naive(model.updated_at),
+            deleted_at=to_naive(model.deleted_at),
         )
 
     def _to_model(
@@ -57,14 +60,29 @@ class TransactionRepositoryImpl(TransactionRepository):
         model.amount = entity.amount
         model.currency = entity.currency
         model.transaction_date = entity.transaction_date
+        # Convert "HH:MM" or "HH:MM:SS" string → datetime.time for DB TIME column
+        if entity.transaction_time is not None:
+            parts = entity.transaction_time.split(":")
+            if len(parts) >= 2:
+                try:
+                    h, m = int(parts[0]), int(parts[1])
+                    s = int(parts[2]) if len(parts) >= 3 else 0
+                    model.transaction_time = time_type(h, m, s)
+                except (ValueError, IndexError):
+                    model.transaction_time = None
+            else:
+                model.transaction_time = None
+        else:
+            model.transaction_time = None
         model.note = entity.note
         model.ocr_confidence = entity.ocr_confidence
         model.is_life_log = entity.is_life_log
         model.is_income = entity.is_income
+        model.is_manual = entity.is_manual
         model.transaction_status = entity.transaction_status
-        model.created_at = entity.created_at
-        model.updated_at = entity.updated_at
-        model.deleted_at = entity.deleted_at
+        model.created_at = to_naive(entity.created_at)
+        model.updated_at = to_naive(entity.updated_at)
+        model.deleted_at = to_naive(entity.deleted_at)
         return model
 
     async def save(self, transaction: Transaction) -> Transaction:
@@ -151,7 +169,7 @@ class TransactionRepositoryImpl(TransactionRepository):
                 is_life_log=transaction.is_life_log,
                 is_income=transaction.is_income,
                 transaction_status=transaction.transaction_status,
-                updated_at=datetime.utcnow(),
+                updated_at=utc_now(),
             )
         )
         await self._session.execute(stmt)
@@ -162,7 +180,7 @@ class TransactionRepositoryImpl(TransactionRepository):
         stmt = (
             update(TransactionModel)
             .where(TransactionModel.id == transaction_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()

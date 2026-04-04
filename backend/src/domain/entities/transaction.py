@@ -28,10 +28,12 @@ class Transaction(BaseEntity):
         amount: int = 0,
         currency: str = "VND",
         transaction_date: datetime | None = None,
+        transaction_time: str | None = None,
         note: str | None = None,
         ocr_confidence: float = 0.0,
         is_life_log: bool = False,
         is_income: bool = False,
+        is_manual: bool = False,
         transaction_status: str = "pending",
         id: UUID | None = None,
         created_at=None,
@@ -53,10 +55,12 @@ class Transaction(BaseEntity):
         self.amount = amount
         self.currency = currency
         self.transaction_date = transaction_date
+        self.transaction_time = transaction_time
         self.note = note
         self.ocr_confidence = ocr_confidence
         self.is_life_log = is_life_log
         self.is_income = is_income
+        self.is_manual = is_manual
         self.transaction_status = transaction_status
 
     # ── Business Logic ─────────────────────────────────

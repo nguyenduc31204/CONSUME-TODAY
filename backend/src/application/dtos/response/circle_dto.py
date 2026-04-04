@@ -14,6 +14,7 @@ class MemberItem(BaseModel):
     name: str
     avatar_url: str | None = None
     role: str  # "owner" | "member"
+    status: str = "approved"  # "approved" | "pending" | "rejected"
     joined_at: datetime
 
     model_config = {"from_attributes": True}
@@ -34,6 +35,7 @@ class CircleItem(BaseModel):
     post_count: int
     is_member: bool
     my_role: str | None  # "owner" | "member" | None
+    my_status: str | None  # "approved" | "pending" | None (None = not a member at all)
     created_at: datetime
     updated_at: datetime
 
@@ -52,6 +54,7 @@ class CircleDetailResponse(BaseModel):
 
     circle: CircleItem
     members: list[MemberItem]
+    pending_members: list[MemberItem] = []
 
 
 class CircleCreatedResponse(BaseModel):
@@ -127,3 +130,51 @@ class LikeResponse(BaseModel):
 
     liked: bool
     like_count: int
+
+
+# ── Circle Fund DTOs ──────────────────────────────────────────────
+
+
+class CircleFundResponse(BaseModel):
+    """Response for GET /api/v1/circles/:id/fund."""
+
+    id: str
+    circle_id: str
+    balance: int
+    total_income: int
+    total_expense: int
+    currency: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CircleFundTransactionResponse(BaseModel):
+    """A single fund transaction."""
+
+    id: str
+    circle_id: str
+    fund_id: str
+    author_id: str
+    type: str  # "expense" | "income"
+    amount: int
+    description: str | None = None
+    category: str | None = None
+    merchant_name: str | None = None
+    transaction_date: str | None = None  # YYYY-MM-DD
+    transaction_time: str | None = None  # HH:MM
+    split_type: str = "equal"
+    split_amounts: dict[str, int] | None = None
+    paid_by: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ListCircleFundTransactionsResponse(BaseModel):
+    """Response for GET /api/v1/circles/:id/fund/transactions."""
+
+    items: list[CircleFundTransactionResponse]
+    total: int

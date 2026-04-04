@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.wallet import Wallet
 from src.domain.repositories.wallet_repository import WalletRepository
 from src.infrastructure.adapters.driven.database import WalletModel
+from src.infrastructure.shared.datetime_utils import to_naive, utc_now
 
 
 class WalletRepositoryImpl(WalletRepository):
@@ -31,9 +32,9 @@ class WalletRepositoryImpl(WalletRepository):
             is_default=model.is_default,
             is_personal=model.is_personal,
             balance=model.balance,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-            deleted_at=model.deleted_at,
+            created_at=to_naive(model.created_at),
+            updated_at=to_naive(model.updated_at),
+            deleted_at=to_naive(model.deleted_at),
         )
 
     def _to_model(
@@ -50,9 +51,9 @@ class WalletRepositoryImpl(WalletRepository):
         model.is_default = entity.is_default
         model.is_personal = entity.is_personal
         model.balance = entity.balance
-        model.created_at = entity.created_at
-        model.updated_at = entity.updated_at
-        model.deleted_at = entity.deleted_at
+        model.created_at = to_naive(entity.created_at)
+        model.updated_at = to_naive(entity.updated_at)
+        model.deleted_at = to_naive(entity.deleted_at)
         return model
 
     async def save(self, wallet: Wallet) -> Wallet:
@@ -105,7 +106,7 @@ class WalletRepositoryImpl(WalletRepository):
                 balance=wallet.balance,
                 is_default=wallet.is_default,
                 is_personal=wallet.is_personal,
-                updated_at=datetime.utcnow(),
+                updated_at=utc_now(),
             )
         )
         await self._session.execute(stmt)
@@ -116,7 +117,7 @@ class WalletRepositoryImpl(WalletRepository):
         stmt = (
             update(WalletModel)
             .where(WalletModel.id == wallet_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()

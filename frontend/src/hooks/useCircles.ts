@@ -183,6 +183,63 @@ export function useToggleLike() {
   })
 }
 
+export function useCircleCalendarMonth(circleId: string, year: number, month: number) {
+  return useQuery({
+    queryKey: [...CIRCLES_KEY, 'calendar', circleId, year, month],
+    queryFn: async () => {
+      const res = await circlesApi.getCalendarMonth(circleId, year, month)
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+}
+
+export function useCircleCalendarDay(circleId: string, date: string) {
+  return useQuery({
+    queryKey: [...CIRCLES_KEY, 'calendar', 'day', circleId, date],
+    queryFn: async () => {
+      const res = await circlesApi.getCalendarDay(circleId, date)
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    enabled: !!date,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+}
+
+// ── Join request management ──────────────────────────────────────
+
+export function useApproveJoinRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ circleId, userId }: { circleId: string; userId: string }) => {
+      const res = await circlesApi.approveJoinRequest(circleId, userId)
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'detail', vars.circleId] })
+    },
+  })
+}
+
+export function useRejectJoinRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ circleId, userId }: { circleId: string; userId: string }) => {
+      const res = await circlesApi.rejectJoinRequest(circleId, userId)
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'detail', vars.circleId] })
+    },
+  })
+}
+
 export function useAddComment() {
   const qc = useQueryClient()
   return useMutation({
@@ -192,6 +249,20 @@ export function useAddComment() {
       return res.data
     },
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'comments', vars.postId] }),
+  })
+}
+
+export function useJoinCircleByCode() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (inviteCode: string) => {
+      const res = await circlesApi.joinByCode(inviteCode)
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: CIRCLES_KEY })
+    },
   })
 }
 
@@ -238,3 +309,69 @@ export function useUploadCircleImage() {
 }
 
 export type { CircleItem, CircleDetailData, CommentItem, MemberItem, PostItem }
+
+// ── Circle Fund ─────────────────────────────────────────────────
+
+import type {
+  CircleFundData, CircleFundTransactionItem, CircleFundTransactionListData,
+  CreateFundTransactionData,
+} from '@/api/circles'
+
+export function useCircleFund(circleId: string) {
+  return useQuery({
+    queryKey: [...CIRCLES_KEY, 'fund', circleId],
+    queryFn: async () => {
+      const res = await circlesApi.getFund(circleId)
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    enabled: !!circleId,
+    staleTime: 30_000,
+  })
+}
+
+export function useCircleFundTransactions(
+  circleId: string,
+  month?: string,
+  type?: 'expense' | 'income',
+) {
+  return useQuery({
+    queryKey: [...CIRCLES_KEY, 'fund-txns', circleId, month, type],
+    queryFn: async () => {
+      const res = await circlesApi.listFundTransactions(circleId, { month, type })
+      if (!res.success) throw new Error(res.message)
+      return res.data
+    },
+    enabled: !!circleId,
+    staleTime: 15_000,
+  })
+}
+
+export function useAddCircleFundTransaction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ circleId, data }: { circleId: string; data: CreateFundTransactionData }) =>
+      circlesApi.addFundTransaction(circleId, data),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'fund', variables.circleId] })
+      qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'fund-txns', variables.circleId] })
+    },
+  })
+}
+
+export function useDeleteCircleFundTransaction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ circleId, txnId }: { circleId: string; txnId: string }) =>
+      circlesApi.deleteFundTransaction(circleId, txnId),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'fund', variables.circleId] })
+      qc.invalidateQueries({ queryKey: [...CIRCLES_KEY, 'fund-txns', variables.circleId] })
+    },
+  })
+}
+
+export type {
+  CircleFundData, CircleFundTransactionItem, CircleFundTransactionListData,
+  CreateFundTransactionData,
+}

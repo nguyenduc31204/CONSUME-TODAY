@@ -61,3 +61,18 @@ class CreateCommentRequest(BaseModel):
     """Request body for POST /api/v1/circles/:id/posts/:postId/comments."""
 
     content: str = Field(..., min_length=1, max_length=500)
+
+
+class CreateFundTransactionRequest(BaseModel):
+    """Request body for POST /api/v1/circles/:id/fund/transactions."""
+
+    type: str = Field(..., pattern="^(expense|income)$")
+    amount: int = Field(..., gt=0)
+    description: str | None = Field(default=None, max_length=255)
+    category: str | None = Field(default=None, max_length=100)
+    merchant_name: str | None = Field(default=None, max_length=255)
+    transaction_date: str | None = Field(default=None, description="YYYY-MM-DD")
+    transaction_time: str | None = Field(default=None, description="HH:MM or HH:MM:SS")
+    split_type: str = Field(default="equal", pattern="^(equal|single|custom)$")
+    split_amounts: dict[str, int] | None = Field(default=None)
+    paid_by: str | None = Field(default=None, description="User UUID who paid")

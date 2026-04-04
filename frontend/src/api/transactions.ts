@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 import type { ApiResponse } from '@/types/api'
-import type { Transaction, TransactionListParams, TransactionUpdateData } from '@/types/transaction'
+import type { Transaction, TransactionListParams, TransactionCreateData, TransactionUpdateData } from '@/types/transaction'
 import type { PaginatedData } from '@/types/api'
 import type { UploadTransactionResponse, TransactionEditResponse } from '@/types/upload'
 
@@ -61,5 +61,10 @@ export const transactionsApi = {
     data: { amount: number; wallet_id?: string; note?: string },
   ): Promise<ApiResponse<Transaction>> {
     return apiClient.post<Transaction>(`/transactions/${id}/add-income`, data)
+  },
+
+  /** Create a manual transaction without uploading an image (Phase 9c) */
+  async createManual(data: TransactionCreateData): Promise<ApiResponse<Transaction>> {
+    return apiClient.post<Transaction>('/transactions/manual', data)
   },
 }

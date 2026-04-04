@@ -5,16 +5,22 @@ Covers: Circle CRUD, member management, posts, comments, likes.
 
 from uuid import UUID
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, Header, Path, Query
+
+from src.application.dtos.response.circle_calendar_dto import CircleCalendarMonthResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dtos.request.circle_dto import (
     CreateCircleRequest,
     CreateCommentRequest,
+    CreateFundTransactionRequest,
     CreatePostRequest,
     UpdateCircleRequest,
 )
 from src.application.use_cases.add_comment import add_comment
+from src.application.use_cases.circle_calendar_month import get_circle_calendar_month
 from src.application.use_cases.create_circle import create_circle
 from src.application.use_cases.create_post import create_post
 from src.application.use_cases.delete_circle import delete_circle
@@ -23,6 +29,8 @@ from src.application.use_cases.delete_post import delete_post
 from src.application.use_cases.get_circle import get_circle
 from src.application.use_cases.invite_member import invite_member
 from src.application.use_cases.join_circle import join_circle
+from src.application.use_cases.approve_join_request import approve_join_request
+from src.application.use_cases.reject_join_request import reject_join_request
 from src.application.use_cases.leave_circle import leave_circle
 from src.application.use_cases.list_comments import list_comments
 from src.application.use_cases.list_circles import list_circles
@@ -146,21 +154,57 @@ async def invite_member_route(
     }
 
 
-@router.post("/circles/{circle_id}/join/{invite_code}", response_model=dict)
+@router.post("/circles/join/{invite_code}", response_model=dict)
 async def join_circle_route(
-    circle_id: UUID,
     invite_code: str = Path(..., min_length=6, max_length=6),
     user_id: UUID = auth_dep,
     db: AsyncSession = Depends(get_db),
 ):
-    """Tham gia Circle qua invite code."""
-    joined_id = await join_circle(db=db, invite_code=invite_code, user_id=user_id)
-    if not joined_id:
+    """Tham gia Circle qua invite code. Owner tự động duyệt."""
+    result = await join_circle(db=db, invite_code=invite_code, user_id=user_id)
+    if not result:
         raise NotFoundException(message="Invite code không hợp lệ.")
+    circle_id, approved = result
     return {
         "success": True,
-        "data": {"circle_id": joined_id},
-        "message": "Bạn đã tham gia nhóm.",
+        "data": {"circle_id": circle_id, "approved": approved},
+        "message": "Bạn đã tham gia nhóm." if approved else "Yêu cầu tham gia đã được gửi.",
+    }
+
+
+@router.post("/circles/{circle_id}/approve/{target_user_id}", response_model=dict)
+async def approve_join_request_route(
+    circle_id: UUID,
+    target_user_id: UUID,
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """Phê duyệt yêu cầu tham gia (chỉ owner)."""
+    await approve_join_request(
+        db=db, circle_id=circle_id, target_user_id=target_user_id, requester_id=user_id
+    )
+    return {
+        "success": True,
+        "data": None,
+        "message": "Đã phê duyệt yêu cầu tham gia.",
+    }
+
+
+@router.post("/circles/{circle_id}/reject/{target_user_id}", response_model=dict)
+async def reject_join_request_route(
+    circle_id: UUID,
+    target_user_id: UUID,
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """Từ chối yêu cầu tham gia (chỉ owner)."""
+    await reject_join_request(
+        db=db, circle_id=circle_id, target_user_id=target_user_id, requester_id=user_id
+    )
+    return {
+        "success": True,
+        "data": None,
+        "message": "Đã từ chối yêu cầu tham gia.",
     }
 
 
@@ -334,4 +378,199 @@ async def delete_comment_route(
         "success": True,
         "data": None,
         "message": "Bình luận đã được xóa.",
+    }
+
+
+# ── Circle Calendar ───────────────────────────────────────────────
+
+@router.get("/circles/{circle_id}/posts/calendar", response_model=dict)
+async def circle_calendar_month_route(
+    circle_id: UUID,
+    year: int = Query(..., ge=2020, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """Số kỷ niệm mỗi ngày trong tháng của Circle."""
+    # Verify circle exists and user has access
+    from src.application.use_cases.get_circle import get_circle as _get_circle
+
+    circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
+    if not circle:
+        raise NotFoundException(message="Circle không tìm thấy.")
+
+    result: CircleCalendarMonthResponse = await get_circle_calendar_month(
+        db=db,
+        circle_id=circle_id,
+        year=year,
+        month=month,
+    )
+    return {
+        "success": True,
+        "data": result.model_dump(mode="json"),
+        "message": "",
+    }
+
+
+@router.get("/circles/{circle_id}/posts/calendar/day", response_model=dict)
+async def circle_calendar_day_route(
+    circle_id: UUID,
+    date_param: date = Query(..., alias="date"),
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """Chi tiết kỷ niệm trong 1 ngày của Circle."""
+    from src.application.use_cases.get_circle import get_circle as _get_circle
+    from src.application.use_cases.circle_calendar_day import get_circle_calendar_day
+    from src.application.dtos.response.circle_calendar_dto import CircleCalendarDayResponse
+
+    circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
+    if not circle:
+        raise NotFoundException(message="Circle không tìm thấy.")
+
+    result: CircleCalendarDayResponse = await get_circle_calendar_day(
+        db=db,
+        circle_id=circle_id,
+        day_date=date_param,
+    )
+    return {
+        "success": True,
+        "data": result.model_dump(mode="json"),
+        "message": "",
+    }
+
+
+# ── Circle Fund Routes ─────────────────────────────────────────────
+
+
+@router.get("/circles/{circle_id}/fund", response_model=dict)
+async def get_circle_fund_route(
+    circle_id: UUID,
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get the shared fund for a circle.
+    Only approved members and owner can view.
+    """
+    from src.application.use_cases.get_circle import get_circle as _get_circle
+    from src.application.use_cases.get_circle_fund import init_circle_fund
+    from src.application.dtos.response.circle_dto import CircleFundResponse
+
+    circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
+    if not circle:
+        raise NotFoundException(message="Circle không tìm thấy.")
+
+    fund = await init_circle_fund(db, circle_id)
+
+    return {
+        "success": True,
+        "data": CircleFundResponse(
+            id=str(fund.id),
+            circle_id=str(fund.circle_id),
+            balance=fund.balance,
+            total_income=fund.total_income,
+            total_expense=fund.total_expense,
+            currency=fund.currency,
+            created_at=fund.created_at,
+            updated_at=fund.updated_at,
+        ).model_dump(mode="json"),
+        "message": "",
+    }
+
+
+@router.get("/circles/{circle_id}/fund/transactions", response_model=dict)
+async def list_circle_fund_transactions_route(
+    circle_id: UUID,
+    month: str | None = Query(default=None, description="YYYY-MM"),
+    type: str | None = Query(default=None, description="expense | income"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List fund transactions for a circle with optional filters.
+    """
+    from src.application.use_cases.get_circle import get_circle as _get_circle
+    from src.application.use_cases.list_circle_fund_transactions import list_circle_fund_transactions
+
+    circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
+    if not circle:
+        raise NotFoundException(message="Circle không tìm thấy.")
+
+    result = await list_circle_fund_transactions(
+        db=db,
+        circle_id=circle_id,
+        month=month if (month and month not in ("undefined", "null", "")) else None,
+        type=type if (type and type not in ("undefined", "null", "")) else None,
+        skip=skip,
+        limit=limit,
+    )
+    return {
+        "success": True,
+        "data": result.model_dump(mode="json"),
+        "message": "",
+    }
+
+
+@router.post("/circles/{circle_id}/fund/transactions", response_model=dict)
+async def add_circle_fund_transaction_route(
+    circle_id: UUID,
+    request: CreateFundTransactionRequest,
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Add an income or expense transaction to the circle's shared fund.
+    Only approved members and owner can add transactions.
+    """
+    from src.application.use_cases.get_circle import get_circle as _get_circle
+    from src.application.use_cases.add_circle_fund_transaction import add_circle_fund_transaction
+
+    circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
+    if not circle:
+        raise NotFoundException(message="Circle không tìm thấy.")
+
+    result = await add_circle_fund_transaction(
+        db=db,
+        circle_id=circle_id,
+        author_id=user_id,
+        data=request,
+    )
+    return {
+        "success": True,
+        "data": result.model_dump(mode="json"),
+        "message": "Giao dịch quỹ đã được thêm.",
+    }
+
+
+@router.delete("/circles/{circle_id}/fund/transactions/{txn_id}", response_model=dict)
+async def delete_circle_fund_transaction_route(
+    circle_id: UUID,
+    txn_id: UUID,
+    user_id: UUID = auth_dep,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete (soft-delete) a fund transaction.
+    Only the author or circle owner can delete.
+    """
+    from src.application.use_cases.get_circle import get_circle as _get_circle
+    from src.application.use_cases.delete_circle_fund_transaction import delete_circle_fund_transaction
+
+    circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
+    if not circle:
+        raise NotFoundException(message="Circle không tìm thấy.")
+
+    await delete_circle_fund_transaction(
+        db=db,
+        circle_id=circle_id,
+        txn_id=txn_id,
+        user_id=user_id,
+    )
+    return {
+        "success": True,
+        "data": None,
+        "message": "Đã xóa giao dịch quỹ.",
     }

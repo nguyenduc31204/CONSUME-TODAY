@@ -3,7 +3,7 @@ TaskRepositoryImpl — SQLAlchemy async implementation of TaskRepository.
 Driven adapter: persistence.
 """
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from sqlalchemy import and_, func, select
@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.task import Task
 from src.domain.repositories.task_repository import TaskRepository
 from src.infrastructure.adapters.driven.database import TaskModel
+from src.infrastructure.shared.datetime_utils import to_naive
 
 
 class TaskRepositoryImpl(TaskRepository):
@@ -31,11 +32,11 @@ class TaskRepositoryImpl(TaskRepository):
             status=model.status,
             related_transaction_id=model.related_transaction_id,
             related_circle_post_id=model.related_circle_post_id,
-            reminder_at=model.reminder_at,
-            completed_at=model.completed_at,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-            deleted_at=model.deleted_at,
+            reminder_at=to_naive(model.reminder_at),
+            completed_at=to_naive(model.completed_at),
+            created_at=to_naive(model.created_at),
+            updated_at=to_naive(model.updated_at),
+            deleted_at=to_naive(model.deleted_at),
         )
 
     def _to_model(
@@ -53,11 +54,11 @@ class TaskRepositoryImpl(TaskRepository):
         model.status = entity.status
         model.related_transaction_id = entity.related_transaction_id
         model.related_circle_post_id = entity.related_circle_post_id
-        model.reminder_at = entity.reminder_at
-        model.completed_at = entity.completed_at
-        model.created_at = entity.created_at
-        model.updated_at = entity.updated_at
-        model.deleted_at = entity.deleted_at
+        model.reminder_at = to_naive(entity.reminder_at)
+        model.completed_at = to_naive(entity.completed_at)
+        model.created_at = to_naive(entity.created_at)
+        model.updated_at = to_naive(entity.updated_at)
+        model.deleted_at = to_naive(entity.deleted_at)
         return model
 
     async def save(self, task: Task) -> Task:

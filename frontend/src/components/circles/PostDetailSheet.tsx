@@ -6,22 +6,10 @@ import { useState } from 'react'
 import { Heart, MessageCircle, Send, MoreHorizontal, Trash2, ChevronLeft } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { getProxyImageUrl } from '@/utils/imageUrl'
+import { formatRelativeTime } from '@/utils/formatters'
 import { useComments, useAddComment, useDeleteComment, useToggleLike } from '@/hooks/useCircles'
 import type { PostItem } from '@/api/circles'
 import { useAuthStore } from '@/stores/authStore'
-
-// ── Time formatting ────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = Math.floor((now - then) / 1000)
-  if (diff < 60) return 'Vừa xong'
-  if (diff < 3600) return `${Math.floor(diff / 60)}p trước`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h trước`
-  if (diff < 604800) return `${Math.floor(diff / 86400)}ngày trước`
-  return new Date(dateStr).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short' })
-}
 
 // ── Avatar ─────────────────────────────────────────────────────
 
@@ -76,7 +64,7 @@ function CommentItem({
             <p className="mt-0.5 text-sm text-gray-800 leading-relaxed break-words">{comment.content}</p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <span className="text-[10px] text-gray-400">{timeAgo(comment.created_at)}</span>
+            <span className="text-[10px] text-gray-400">{formatRelativeTime(comment.created_at)}</span>
             {canDelete && (
               <div className="relative">
                 <button
@@ -120,6 +108,13 @@ export function PostDetailSheet({ post, circleId, myRole, onClose, onDelete }: P
   const [commentText, setCommentText] = useState('')
   const [isLikeLoading, setIsLikeLoading] = useState(false)
 
+  // ── Optimistic like state ─────────────────────────────────────
+  const [optimisticLiked, setOptimisticLiked] = useState<boolean | null>(null)
+  const [optimisticCount, setOptimisticCount] = useState<number | null>(null)
+
+  const isCurrentlyLiked = optimisticLiked ?? post.is_liked
+  const currentCount = optimisticCount ?? post.like_count
+
   const { data: commentsData, refetch: refetchComments } = useComments(circleId, post.id)
   const addComment = useAddComment()
   const deleteComment = useDeleteComment()
@@ -133,8 +128,23 @@ export function PostDetailSheet({ post, circleId, myRole, onClose, onDelete }: P
   const handleLike = async () => {
     if (isLikeLoading) return
     setIsLikeLoading(true)
+
+    // Optimistic update: flip immediately
+    const wasLiked = isCurrentlyLiked
+    setOptimisticLiked(!wasLiked)
+    setOptimisticCount((c) => (c ?? post.like_count) + (wasLiked ? -1 : 1))
+
     try {
-      await toggleLike.mutateAsync({ circleId, postId: post.id })
+      const result = await toggleLike.mutateAsync({ circleId, postId: post.id })
+      // Sync with server response
+      if (result) {
+        setOptimisticLiked(result.liked)
+        setOptimisticCount(result.like_count)
+      }
+    } catch {
+      // Revert on failure
+      setOptimisticLiked(wasLiked)
+      setOptimisticCount(post.like_count)
     } finally {
       setIsLikeLoading(false)
     }
@@ -170,7 +180,7 @@ export function PostDetailSheet({ post, circleId, myRole, onClose, onDelete }: P
         </button>
         <div className="flex-1">
           <p className="text-sm font-semibold text-gray-800">Kỷ niệm</p>
-          <p className="text-[11px] text-gray-400">{timeAgo(post.created_at)}</p>
+          <p className="text-[11px] text-gray-400">{formatRelativeTime(post.created_at)}</p>
         </div>
         {canDeletePost && onDelete && (
           <button
@@ -211,11 +221,11 @@ export function PostDetailSheet({ post, circleId, myRole, onClose, onDelete }: P
             <Heart
               className={cn(
                 'h-5 w-5 transition-all',
-                post.is_liked ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-500 hover:text-red-400',
+                isCurrentlyLiked ? 'fill-red-500 text-red-500 scale-110' : 'text-gray-500 hover:text-red-400',
               )}
             />
-            <span className={cn('text-sm font-medium', post.is_liked ? 'text-red-500' : 'text-gray-500')}>
-              {post.like_count > 0 ? post.like_count : 'Thích'}
+            <span className={cn('text-sm font-medium', isCurrentlyLiked ? 'text-red-500' : 'text-gray-500')}>
+              {currentCount > 0 ? currentCount : 'Thích'}
             </span>
           </button>
 

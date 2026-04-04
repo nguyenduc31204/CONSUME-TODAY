@@ -20,6 +20,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Time,
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.ext.asyncio import (
@@ -193,7 +194,9 @@ class TransactionModel(Base):
     transaction_date: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, index=True
     )
+    transaction_time: Mapped[datetime | None] = mapped_column(Time, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_manual: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ocr_confidence: Mapped[float] = mapped_column(default=0.0)
     is_life_log: Mapped[bool] = mapped_column(Boolean, default=False)
     is_income: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -339,6 +342,9 @@ class CircleModel(Base):
     posts: Mapped[list["CirclePostModel"]] = relationship(
         "CirclePostModel", back_populates="circle", lazy="selectin"
     )
+    fund: Mapped["CircleFundModel | None"] = relationship(
+        "CircleFundModel", back_populates="circle", uselist=False, lazy="selectin"
+    )
 
 
 class CircleMemberModel(Base):
@@ -360,6 +366,9 @@ class CircleMemberModel(Base):
         index=True,
     )
     role: Mapped[str] = mapped_column(String(20), default="member", nullable=False)
+    member_status: Mapped[str] = mapped_column(
+        String(20), default="approved", nullable=False
+    )
     joined_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
@@ -472,6 +481,90 @@ class CircleLikeModel(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class CircleFundModel(Base):
+    """ORM model for CircleFund entity."""
+
+    __tablename__ = "circle_funds"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    circle_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    balance: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    total_income: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    total_expense: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), default="VND", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    circle: Mapped["CircleModel"] = relationship("CircleModel")
+    transactions: Mapped[list["CircleFundTransactionModel"]] = relationship(
+        "CircleFundTransactionModel", back_populates="fund", lazy="selectin"
+    )
+
+
+class CircleFundTransactionModel(Base):
+    """ORM model for CircleFundTransaction entity."""
+
+    __tablename__ = "circle_fund_transactions"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    circle_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    fund_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circle_funds.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    type: Mapped[str] = mapped_column(String(20), nullable=False)
+    amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    merchant_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    transaction_date: Mapped[datetime] = mapped_column(Date, nullable=False)
+    transaction_time: Mapped[str | None] = mapped_column(Time, nullable=True)
+    split_type: Mapped[str] = mapped_column(
+        String(20), default="equal", nullable=False
+    )
+    split_amounts: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    paid_by: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    fund: Mapped["CircleFundModel"] = relationship(
+        "CircleFundModel", back_populates="transactions"
+    )
+    author: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[author_id])
+    payer: Mapped["UserModel"] = relationship("UserModel", foreign_keys=[paid_by])
 
 
 # ── Database Engine & Session ────────────────────────────────

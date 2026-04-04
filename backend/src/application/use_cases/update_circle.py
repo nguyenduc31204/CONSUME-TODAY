@@ -11,7 +11,7 @@ from src.application.dtos.response.circle_dto import CircleItem
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None) -> CircleItem:
+def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None) -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -25,6 +25,7 @@ def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_rol
         post_count=post_count,
         is_member=is_member,
         my_role=my_role,
+        my_status=my_status,
         created_at=circle.created_at,
         updated_at=circle.updated_at,
     )
@@ -62,7 +63,7 @@ async def update_circle(
 
     saved = await repo.update_circle(circle)
     member_count = await repo.count_members(circle_id)
-    return _circle_to_item(saved, member_count=member_count, is_member=True, my_role="owner")
+    return _circle_to_item(saved, member_count=member_count, is_member=True, my_role="owner", my_status="approved")
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:

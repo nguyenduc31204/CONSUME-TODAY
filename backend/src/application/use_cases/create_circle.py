@@ -13,7 +13,7 @@ from src.domain.entities.circle_member import CircleMember
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role="owner") -> CircleItem:
+def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role="owner", my_status="approved") -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -27,6 +27,7 @@ def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_rol
         post_count=post_count,
         is_member=is_member,
         my_role=my_role,
+        my_status=my_status,
         created_at=circle.created_at,
         updated_at=circle.updated_at,
     )
@@ -38,7 +39,7 @@ async def create_circle(
     data: CreateCircleRequest,
 ) -> CircleCreatedResponse:
     """
-    Tạo Circle mới và tự động add owner làm thành viên.
+    Tạo Circle mới và tự động add owner làm thành viên + init quỹ chung.
     """
     repo: CircleRepository = _get_repo(db)
 
@@ -61,6 +62,10 @@ async def create_circle(
         role="owner",
     )
     await repo.save_member(member)
+
+    # Init quỹ chung cho circle
+    from src.application.use_cases.get_circle_fund import init_circle_fund
+    await init_circle_fund(db, saved.id)
 
     # Generate invite code (6 chars from circle id)
     invite_code = str(saved.id)[-6:].upper()

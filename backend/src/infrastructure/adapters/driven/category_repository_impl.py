@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.category import Category
 from src.domain.repositories.category_repository import CategoryRepository
 from src.infrastructure.adapters.driven.database import CategoryModel
+from src.infrastructure.shared.datetime_utils import to_naive, utc_now
 
 
 class CategoryRepositoryImpl(CategoryRepository):
@@ -30,9 +31,9 @@ class CategoryRepositoryImpl(CategoryRepository):
             emoji=model.emoji,
             is_default=model.is_default,
             is_active=model.is_active,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-            deleted_at=model.deleted_at,
+            created_at=to_naive(model.created_at),
+            updated_at=to_naive(model.updated_at),
+            deleted_at=to_naive(model.deleted_at),
         )
 
     def _to_model(
@@ -48,9 +49,9 @@ class CategoryRepositoryImpl(CategoryRepository):
         model.emoji = entity.emoji
         model.is_default = entity.is_default
         model.is_active = entity.is_active
-        model.created_at = entity.created_at
-        model.updated_at = entity.updated_at
-        model.deleted_at = entity.deleted_at
+        model.created_at = to_naive(entity.created_at)
+        model.updated_at = to_naive(entity.updated_at)
+        model.deleted_at = to_naive(entity.deleted_at)
         return model
 
     async def save(self, category: Category) -> Category:
@@ -120,7 +121,7 @@ class CategoryRepositoryImpl(CategoryRepository):
                 color=category.color,
                 emoji=category.emoji,
                 is_active=category.is_active,
-                updated_at=datetime.utcnow(),
+                updated_at=utc_now(),
             )
         )
         await self._session.execute(stmt)
@@ -132,8 +133,8 @@ class CategoryRepositoryImpl(CategoryRepository):
             update(CategoryModel)
             .where(CategoryModel.id == category_id)
             .values(
-                deleted_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                deleted_at=utc_now(),
+                updated_at=utc_now(),
                 is_active=False,
             )
         )

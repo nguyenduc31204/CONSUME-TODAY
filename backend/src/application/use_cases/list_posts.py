@@ -45,13 +45,14 @@ async def list_posts(
         return None
 
     # Check visibility: link_shared → anyone can view
-    # members_only → must be member
+    # members_only → must be approved member or owner
     if circle.visibility == "members_only":
         if viewer_id is None:
             from src.infrastructure.shared.exceptions import ForbiddenException
             raise ForbiddenException(message="Cần đăng nhập để xem nhóm này.")
         member = await repo.get_member(circle_id, viewer_id)
-        if not member and not circle.is_owner(viewer_id):
+        is_approved = member is not None and member.status == "approved"
+        if not is_approved and not circle.is_owner(viewer_id):
             raise ForbiddenException(message="Bạn không phải thành viên nhóm.")
 
     posts, total = await repo.list_posts(circle_id, skip=skip, limit=limit)

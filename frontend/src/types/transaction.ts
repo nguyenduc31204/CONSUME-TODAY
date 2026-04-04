@@ -9,10 +9,12 @@ export interface Transaction {
   amount: number
   currency: string
   transaction_date: string | null
+  transaction_time: string | null
   note: string | null
   ocr_confidence: number
   is_life_log: boolean
   is_income: boolean
+  is_manual: boolean
   transaction_status: string
   created_at: string
   updated_at: string
@@ -36,8 +38,10 @@ export interface TransactionCreateData {
   amount: number
   merchant_name?: string
   transaction_date?: string
+  transaction_time?: string
   note?: string
   is_life_log?: boolean
+  is_income?: boolean
 }
 
 export interface TransactionUpdateData {
@@ -47,6 +51,7 @@ export interface TransactionUpdateData {
   wallet_id?: string
   note?: string
   merchant_name?: string
+  transaction_time?: string | null
   /** True = income (adds balance to wallet), false/undefined = expense (deducts balance) */
   is_income?: boolean
 }

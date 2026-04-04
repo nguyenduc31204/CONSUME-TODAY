@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.user import User
 from src.domain.repositories.user_repository import UserRepository
 from src.infrastructure.adapters.driven.database import UserModel
+from src.infrastructure.shared.datetime_utils import to_naive, utc_now
 
 
 class UserRepositoryImpl(UserRepository):
@@ -31,9 +32,9 @@ class UserRepositoryImpl(UserRepository):
             hashed_password=model.hashed_password,
             is_email_verified=model.is_email_verified,
             is_active=model.is_active,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-            deleted_at=model.deleted_at,
+            created_at=to_naive(model.created_at),
+            updated_at=to_naive(model.updated_at),
+            deleted_at=to_naive(model.deleted_at),
         )
 
     def _to_model(self, entity: User, model: UserModel | None = None) -> UserModel:
@@ -48,9 +49,9 @@ class UserRepositoryImpl(UserRepository):
         model.hashed_password = entity.hashed_password
         model.is_email_verified = entity.is_email_verified
         model.is_active = entity.is_active
-        model.created_at = entity.created_at
-        model.updated_at = entity.updated_at
-        model.deleted_at = entity.deleted_at
+        model.created_at = to_naive(entity.created_at)
+        model.updated_at = to_naive(entity.updated_at)
+        model.deleted_at = to_naive(entity.deleted_at)
         return model
 
     async def save(self, user: User) -> User:
@@ -109,7 +110,7 @@ class UserRepositoryImpl(UserRepository):
                 hashed_password=user.hashed_password,
                 is_email_verified=user.is_email_verified,
                 is_active=user.is_active,
-                updated_at=datetime.utcnow(),
+                updated_at=utc_now(),
             )
         )
         await self._session.execute(stmt)
@@ -120,7 +121,7 @@ class UserRepositoryImpl(UserRepository):
         stmt = (
             update(UserModel)
             .where(UserModel.id == user_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()

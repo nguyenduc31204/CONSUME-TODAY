@@ -21,10 +21,12 @@ class TransactionResponse(BaseModel):
     amount: int
     currency: str = "VND"
     transaction_date: datetime | None = None
+    transaction_time: str | None = None
     note: str | None = None
     ocr_confidence: float
     is_life_log: bool
     is_income: bool = False
+    is_manual: bool = False
     transaction_status: str = "pending"
     created_at: datetime
     updated_at: datetime

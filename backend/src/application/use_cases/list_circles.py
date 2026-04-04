@@ -10,7 +10,7 @@ from src.application.dtos.response.circle_dto import CircleItem, CircleListRespo
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None) -> CircleItem:
+def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None) -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -24,6 +24,7 @@ def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_rol
         post_count=post_count,
         is_member=is_member,
         my_role=my_role,
+        my_status=my_status,
         created_at=circle.created_at,
         updated_at=circle.updated_at,
     )
@@ -49,6 +50,7 @@ async def list_circles(
             post_count=0,  # TODO: add post_count to circle model or query
             is_member=True,
             my_role="owner" if circle.owner_id == user_id else "member",
+            my_status="approved",
         ))
 
     return CircleListResponse(items=items, total=len(items))

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 /** Hook: List wallets */
 export function useWallets() {
+  const accessToken = useAuthStore((s) => s.accessToken)
   return useQuery({
     queryKey: ['wallets'],
     queryFn: async () => {
@@ -13,7 +14,7 @@ export function useWallets() {
       if (!response.success) throw new Error(response.message)
       return response.data
     },
-    enabled: false, // Enable when auth is ready
+    enabled: !!accessToken,
   })
 }
 

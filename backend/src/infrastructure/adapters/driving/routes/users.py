@@ -7,6 +7,8 @@ Phase 6+: Profile edit (name, avatar_url) + avatar upload to R2.
 from datetime import datetime
 from uuid import UUID
 
+from src.infrastructure.shared.datetime_utils import utc_now
+
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, select
@@ -164,7 +166,7 @@ async def update_my_profile(
     model.name = body.name
     if body.avatar_url is not None:
         model.avatar_url = body.avatar_url
-    model.updated_at = datetime.utcnow()
+    model.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(model)
@@ -247,7 +249,7 @@ async def upload_avatar(
     # Persist
     model.avatar_url = upload_result["url"]
     model.avatar_storage_key = upload_result["storage_key"]
-    model.updated_at = datetime.utcnow()
+    model.updated_at = utc_now()
 
     await db.commit()
     await db.refresh(model)
