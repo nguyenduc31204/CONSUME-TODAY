@@ -9,6 +9,7 @@ interface TokenResponse {
 
 interface GoogleAuthRequest {
   code: string
+  redirect_uri: string
 }
 
 export interface LoginRequest {
@@ -24,8 +25,8 @@ export interface RegisterRequest {
 
 export const authApi = {
   /** Exchange Google OAuth code for JWT tokens */
-  async googleAuth(code: string): Promise<ApiResponse<TokenResponse>> {
-    return apiClient.post('/auth/google', { code } as GoogleAuthRequest)
+  async googleAuth(code: string, redirectUri: string): Promise<ApiResponse<TokenResponse>> {
+    return apiClient.post('/auth/google', { code, redirect_uri: redirectUri } as GoogleAuthRequest)
   },
 
   /** Login with email + password */

@@ -98,7 +98,8 @@ export default function Login() {
   }
 
   async function doGoogleAuth(code: string) {
-    const res = await authApi.googleAuth(code)
+    const redirectUri = googleClient ? 'postmessage' : `${window.location.origin}/auth/callback`
+    const res = await authApi.googleAuth(code, redirectUri)
     if (!res.success || !res.data) {
       addToast(res.message || 'Đăng nhập thất bại', 'error')
       return

@@ -40,13 +40,23 @@ class AuthenticateUseCase:
         self._jwt = jwt_service
         self._google = google_oauth
 
-    async def authenticate_with_google(self, code: str) -> tuple[User, str, str]:
+    async def authenticate_with_google(
+        self, code: str, redirect_uri: str = "postmessage"
+    ) -> tuple[User, str, str]:
         """
         Full Google OAuth authentication flow.
         Returns (user, access_token, refresh_token).
+
+        Args:
+            code: Authorization code from Google OAuth.
+            redirect_uri: Must match the redirect_uri used when requesting the code.
+                         Use "postmessage" for the GIS popup flow.
+                         Use "{origin}/auth/callback" for the redirect flow.
         """
         # Step 1: Get Google user info
-        access_token, id_token = await self._google.exchange_code_for_tokens(code)
+        access_token, id_token = await self._google.exchange_code_for_tokens(
+            code, redirect_uri
+        )
         google_user = await self._google.get_user_info(access_token, id_token)
 
         # Step 2: Find or create user
