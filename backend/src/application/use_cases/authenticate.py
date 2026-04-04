@@ -79,7 +79,9 @@ class AuthenticateUseCase:
             await self._create_first_login_defaults(user.id)
 
         # Step 4: Generate tokens
-        access_token_jwt, refresh_token_jwt = self._jwt.create_token_pair(user.id)
+        access_token_jwt, refresh_token_jwt = self._jwt.create_token_pair(
+            user.id, name=user.name, email=user.email
+        )
         return user, access_token_jwt, refresh_token_jwt
 
     async def refresh_access_token(self, refresh_token: str) -> tuple[str, str]:
@@ -105,7 +107,7 @@ class AuthenticateUseCase:
                 code="ERR_USER_INACTIVE",
             )
 
-        return self._jwt.create_token_pair(user.id)
+        return self._jwt.create_token_pair(user.id, name=user.name, email=user.email)
 
     async def get_current_user(self, user_id: UUID) -> User:
         """Get the current authenticated user."""
@@ -192,7 +194,7 @@ class AuthenticateUseCase:
         # Create first-login defaults
         await self._create_first_login_defaults(user.id)
 
-        access_token, refresh_token = self._jwt.create_token_pair(user.id)
+        access_token, refresh_token = self._jwt.create_token_pair(user.id, name=user.name, email=user.email)
         return user, access_token, refresh_token
 
     async def login_with_email(
@@ -225,5 +227,5 @@ class AuthenticateUseCase:
                 message="Invalid email or password.", code="ERR_INVALID_CREDENTIALS"
             )
 
-        access_token, refresh_token = self._jwt.create_token_pair(user.id)
+        access_token, refresh_token = self._jwt.create_token_pair(user.id, name=user.name, email=user.email)
         return user, access_token, refresh_token

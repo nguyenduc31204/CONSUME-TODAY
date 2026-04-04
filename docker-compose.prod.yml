@@ -32,11 +32,7 @@ services:
     container_name: memoir_backend
     restart: always
     command: >
-      sh -c "
-        . /app/.venv/bin/activate &&
-        python -m alembic upgrade head &&
-        uvicorn src.infrastructure.adapters.driving.main:app --host 0.0.0.0 --port 8000
-      "
+      sh -c "uvicorn src.infrastructure.adapters.driving.main:app --host 0.0.0.0 --port 8000"
     environment:
       APP_ENV: production
       APP_SECRET_KEY: ${APP_SECRET_KEY}
