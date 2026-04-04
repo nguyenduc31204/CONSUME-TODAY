@@ -39,7 +39,7 @@ def _map_member(model) -> CircleMember:
         circle_id=model.circle_id,
         user_id=model.user_id,
         role=model.role,
-        status=getattr(model, 'member_status', 'approved'),
+        status=getattr(model, "member_status", "approved"),
         joined_at=to_naive(model.joined_at),
         created_at=to_naive(model.created_at),
         updated_at=to_naive(model.updated_at),
@@ -85,6 +85,7 @@ def _get_model(db: AsyncSession, model_name: str):
         CircleModel,
         CirclePostModel,
     )
+
     return {
         "CircleModel": CircleModel,
         "CircleMemberModel": CircleMemberModel,
@@ -103,6 +104,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def save_circle(self, circle: Circle) -> Circle:
         from src.infrastructure.adapters.driven.database import CircleModel
+
         model = CircleModel(
             id=circle.id,
             name=circle.name,
@@ -120,6 +122,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def get_circle_by_id(self, circle_id: UUID) -> Circle | None:
         from src.infrastructure.adapters.driven.database import CircleModel
+
         stmt = select(CircleModel).where(
             CircleModel.id == circle_id,
             CircleModel.deleted_at.is_(None),
@@ -133,6 +136,7 @@ class CircleRepositoryImpl(CircleRepository):
             CircleMemberModel,
             CircleModel,
         )
+
         # Get circles where user is owner OR approved member
         stmt = (
             select(CircleModel)
@@ -162,10 +166,10 @@ class CircleRepositoryImpl(CircleRepository):
             CircleMemberModel,
             CircleModel,
         )
+
         conditions = [
             CircleModel.deleted_at.is_(None),
-            (CircleModel.owner_id == user_id)
-            | (CircleMemberModel.user_id == user_id),
+            (CircleModel.owner_id == user_id) | (CircleMemberModel.user_id == user_id),
         ]
         if since:
             conditions.append(CircleModel.updated_at > since)
@@ -188,6 +192,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def update_circle(self, circle: Circle) -> Circle:
         from src.infrastructure.adapters.driven.database import CircleModel
+
         stmt = (
             update(CircleModel)
             .where(CircleModel.id == circle.id)
@@ -205,6 +210,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def soft_delete_circle(self, circle_id: UUID) -> None:
         from src.infrastructure.adapters.driven.database import CircleModel
+
         stmt = (
             update(CircleModel)
             .where(CircleModel.id == circle_id)
@@ -217,6 +223,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def save_member(self, member: CircleMember) -> CircleMember:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
+
         model = CircleMemberModel(
             id=member.id,
             circle_id=member.circle_id,
@@ -230,10 +237,9 @@ class CircleRepositoryImpl(CircleRepository):
         await self._session.refresh(model)
         return _map_member(model)
 
-    async def get_member(
-        self, circle_id: UUID, user_id: UUID
-    ) -> CircleMember | None:
+    async def get_member(self, circle_id: UUID, user_id: UUID) -> CircleMember | None:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
+
         stmt = select(CircleMemberModel).where(
             CircleMemberModel.circle_id == circle_id,
             CircleMemberModel.user_id == user_id,
@@ -245,6 +251,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def list_members(self, circle_id: UUID) -> list[CircleMember]:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
+
         stmt = select(CircleMemberModel).where(
             CircleMemberModel.circle_id == circle_id,
             CircleMemberModel.deleted_at.is_(None),
@@ -255,6 +262,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def list_pending_members(self, circle_id: UUID) -> list[CircleMember]:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
+
         stmt = select(CircleMemberModel).where(
             CircleMemberModel.circle_id == circle_id,
             CircleMemberModel.deleted_at.is_(None),
@@ -265,10 +273,15 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def count_members(self, circle_id: UUID) -> int:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
-        stmt = select(func.count()).select_from(CircleMemberModel).where(
-            CircleMemberModel.circle_id == circle_id,
-            CircleMemberModel.deleted_at.is_(None),
-            CircleMemberModel.member_status == "approved",
+
+        stmt = (
+            select(func.count())
+            .select_from(CircleMemberModel)
+            .where(
+                CircleMemberModel.circle_id == circle_id,
+                CircleMemberModel.deleted_at.is_(None),
+                CircleMemberModel.member_status == "approved",
+            )
         )
         return (await self._session.execute(stmt)).scalar_one()
 
@@ -276,6 +289,7 @@ class CircleRepositoryImpl(CircleRepository):
         self, circle_id: UUID, user_id: UUID, status: str
     ) -> CircleMember | None:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
+
         stmt = (
             update(CircleMemberModel)
             .where(
@@ -291,6 +305,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def remove_member(self, circle_id: UUID, user_id: UUID) -> None:
         from src.infrastructure.adapters.driven.database import CircleMemberModel
+
         stmt = (
             update(CircleMemberModel)
             .where(
@@ -306,6 +321,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def save_post(self, post: CirclePost) -> CirclePost:
         from src.infrastructure.adapters.driven.database import CirclePostModel
+
         model = CirclePostModel(
             id=post.id,
             circle_id=post.circle_id,
@@ -324,6 +340,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def get_post_by_id(self, post_id: UUID) -> CirclePost | None:
         from src.infrastructure.adapters.driven.database import CirclePostModel
+
         stmt = select(CirclePostModel).where(
             CirclePostModel.id == post_id,
             CirclePostModel.deleted_at.is_(None),
@@ -336,14 +353,13 @@ class CircleRepositoryImpl(CircleRepository):
         self, circle_id: UUID, *, skip: int = 0, limit: int = 20
     ) -> tuple[list[CirclePost], int]:
         from src.infrastructure.adapters.driven.database import CirclePostModel
+
         conditions = [
             CirclePostModel.circle_id == circle_id,
             CirclePostModel.deleted_at.is_(None),
         ]
         count_stmt = (
-            select(func.count())
-            .select_from(CirclePostModel)
-            .where(and_(*conditions))
+            select(func.count()).select_from(CirclePostModel).where(and_(*conditions))
         )
         total = (await self._session.execute(count_stmt)).scalar_one()
         list_stmt = (
@@ -368,6 +384,7 @@ class CircleRepositoryImpl(CircleRepository):
             CircleMemberModel,
             CirclePostModel,
         )
+
         # Posts from circles the user is a member of
         conditions = [
             CirclePostModel.deleted_at.is_(None),
@@ -400,6 +417,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def update_post(self, post: CirclePost) -> CirclePost:
         from src.infrastructure.adapters.driven.database import CirclePostModel
+
         stmt = (
             update(CirclePostModel)
             .where(CirclePostModel.id == post.id)
@@ -417,6 +435,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def soft_delete_post(self, post_id: UUID) -> None:
         from src.infrastructure.adapters.driven.database import CirclePostModel
+
         stmt = (
             update(CirclePostModel)
             .where(CirclePostModel.id == post_id)
@@ -429,6 +448,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def save_comment(self, comment: CircleComment) -> CircleComment:
         from src.infrastructure.adapters.driven.database import CircleCommentModel
+
         model = CircleCommentModel(
             id=comment.id,
             post_id=comment.post_id,
@@ -442,6 +462,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def get_comment_by_id(self, comment_id: UUID) -> CircleComment | None:
         from src.infrastructure.adapters.driven.database import CircleCommentModel
+
         stmt = select(CircleCommentModel).where(
             CircleCommentModel.id == comment_id,
             CircleCommentModel.deleted_at.is_(None),
@@ -452,6 +473,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def list_comments(self, post_id: UUID) -> list[CircleComment]:
         from src.infrastructure.adapters.driven.database import CircleCommentModel
+
         stmt = (
             select(CircleCommentModel)
             .where(
@@ -465,6 +487,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def soft_delete_comment(self, comment_id: UUID) -> None:
         from src.infrastructure.adapters.driven.database import CircleCommentModel
+
         stmt = (
             update(CircleCommentModel)
             .where(CircleCommentModel.id == comment_id)
@@ -477,6 +500,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def save_like(self, like: CircleLike) -> CircleLike:
         from src.infrastructure.adapters.driven.database import CircleLikeModel
+
         model = CircleLikeModel(
             id=like.id,
             post_id=like.post_id,
@@ -489,6 +513,7 @@ class CircleRepositoryImpl(CircleRepository):
 
     async def remove_like(self, post_id: UUID, user_id: UUID) -> None:
         from src.infrastructure.adapters.driven.database import CircleLikeModel
+
         stmt = (
             update(CircleLikeModel)
             .where(

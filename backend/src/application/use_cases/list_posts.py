@@ -49,6 +49,7 @@ async def list_posts(
     if circle.visibility == "members_only":
         if viewer_id is None:
             from src.infrastructure.shared.exceptions import ForbiddenException
+
             raise ForbiddenException(message="Cần đăng nhập để xem nhóm này.")
         member = await repo.get_member(circle_id, viewer_id)
         is_approved = member is not None and member.status == "approved"
@@ -61,7 +62,9 @@ async def list_posts(
     items = []
     for post in posts:
         author_name, author_avatar = await _get_user_info(db, post.author_id)
-        is_liked = await _is_liked(db, circle_id, post.id, viewer_id) if viewer_id else False
+        is_liked = (
+            await _is_liked(db, circle_id, post.id, viewer_id) if viewer_id else False
+        )
         items.append(_post_to_item(post, author_name, author_avatar, is_liked))
 
     return PostListResponse(
@@ -73,15 +76,21 @@ async def list_posts(
 
 async def _get_user_info(db: AsyncSession, user_id: UUID) -> tuple[str, str | None]:
     from src.infrastructure.adapters.driven.database import UserModel
+
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
-    return (f"{user.name}" if user and user.name else f"User {str(user_id)[:8]}",
-            user.avatar_url if user else None)
+    return (
+        f"{user.name}" if user and user.name else f"User {str(user_id)[:8]}",
+        user.avatar_url if user else None,
+    )
 
 
-async def _is_liked(db: AsyncSession, circle_id: UUID, post_id: UUID, user_id: UUID) -> bool:
+async def _is_liked(
+    db: AsyncSession, circle_id: UUID, post_id: UUID, user_id: UUID
+) -> bool:
     from src.infrastructure.adapters.driven.database import CircleLikeModel
+
     stmt = select(CircleLikeModel).where(
         CircleLikeModel.post_id == post_id,
         CircleLikeModel.user_id == user_id,
@@ -95,4 +104,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

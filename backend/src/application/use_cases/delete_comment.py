@@ -32,10 +32,13 @@ async def delete_comment(
         return False
 
     # Only author of comment, post author, or circle owner can delete
-    if (comment.author_id != user_id
-            and post.author_id != user_id
-            and not circle.is_owner(user_id)):
+    if (
+        comment.author_id != user_id
+        and post.author_id != user_id
+        and not circle.is_owner(user_id)
+    ):
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Bạn không có quyền xóa bình luận này.")
 
     await repo.soft_delete_comment(comment_id)
@@ -50,4 +53,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

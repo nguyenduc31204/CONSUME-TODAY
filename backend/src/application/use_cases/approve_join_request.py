@@ -28,12 +28,14 @@ async def approve_join_request(
     req_member = await repo.get_member(circle_id, requester_id)
     if not req_member or req_member.role != "owner":
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Chỉ trưởng nhóm mới có thể duyệt yêu cầu.")
 
     # Update status
     updated = await repo.update_member_status(circle_id, target_user_id, "approved")
     if not updated:
         from src.infrastructure.shared.exceptions import NotFoundException
+
         raise NotFoundException(message="Không tìm thấy yêu cầu tham gia.")
     return True
 
@@ -42,4 +44,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

@@ -34,6 +34,7 @@ async def add_circle_fund_transaction(
     tx_date = date_type.today()
     if data.transaction_date:
         from datetime import datetime
+
         parsed = datetime.strptime(data.transaction_date, "%Y-%m-%d")
         tx_date = parsed.date()
 
@@ -59,7 +60,9 @@ async def add_circle_fund_transaction(
     # Update fund balance
     delta_income = data.amount if data.type == "income" else 0
     delta_expense = data.amount if data.type == "expense" else 0
-    await repo.update_fund_balance(fund.id, delta_income=delta_income, delta_expense=delta_expense)
+    await repo.update_fund_balance(
+        fund.id, delta_income=delta_income, delta_expense=delta_expense
+    )
 
     return CircleFundTransactionResponse(
         id=str(saved.id),
@@ -71,7 +74,9 @@ async def add_circle_fund_transaction(
         description=saved.description,
         category=saved.category,
         merchant_name=saved.merchant_name,
-        transaction_date=saved.transaction_date.isoformat() if saved.transaction_date else None,
+        transaction_date=saved.transaction_date.isoformat()
+        if saved.transaction_date
+        else None,
         transaction_time=saved.transaction_time,
         split_type=saved.split_type,
         split_amounts=saved.split_amounts,
@@ -85,4 +90,5 @@ def _get_repo(db: AsyncSession) -> CircleFundRepository:
     from src.infrastructure.adapters.driven.circle_fund_repository_impl import (
         CircleFundRepositoryImpl,
     )
+
     return CircleFundRepositoryImpl(db)

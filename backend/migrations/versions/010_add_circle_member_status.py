@@ -21,11 +21,18 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "circle_members",
-        sa.Column("member_status", sa.String(length=20), nullable=False, server_default="approved"),
+        sa.Column(
+            "member_status",
+            sa.String(length=20),
+            nullable=False,
+            server_default="approved",
+        ),
     )
     # Set all existing members (owner rows) to approved
     # Owner is determined by the owner_id in circles table, so we update all to approved
-    op.execute("UPDATE circle_members SET member_status = 'approved' WHERE member_status IS NULL")
+    op.execute(
+        "UPDATE circle_members SET member_status = 'approved' WHERE member_status IS NULL"
+    )
     # Set existing non-owner members (those created via join) to pending
     # We don't know which were join requests, so default them to approved for backward compat
     # (existing members were already approved by virtue of being in the DB)

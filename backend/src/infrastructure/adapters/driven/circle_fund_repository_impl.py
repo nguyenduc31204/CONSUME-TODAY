@@ -40,7 +40,9 @@ def _map_txn(model) -> CircleFundTransaction:
         category=model.category,
         merchant_name=model.merchant_name,
         transaction_date=model.transaction_date,
-        transaction_time=str(model.transaction_time) if model.transaction_time else None,
+        transaction_time=str(model.transaction_time)
+        if model.transaction_time
+        else None,
         split_type=model.split_type,
         split_amounts=model.split_amounts,
         paid_by=model.paid_by,
@@ -58,6 +60,7 @@ class CircleFundRepositoryImpl(CircleFundRepository):
 
     async def save_fund(self, fund: CircleFund) -> CircleFund:
         from src.infrastructure.adapters.driven.database import CircleFundModel
+
         stmt = select(CircleFundModel).where(
             CircleFundModel.circle_id == fund.circle_id,
             CircleFundModel.deleted_at.is_(None),
@@ -87,6 +90,7 @@ class CircleFundRepositoryImpl(CircleFundRepository):
 
     async def get_fund_by_circle(self, circle_id: UUID) -> CircleFund | None:
         from src.infrastructure.adapters.driven.database import CircleFundModel
+
         stmt = select(CircleFundModel).where(
             CircleFundModel.circle_id == circle_id,
             CircleFundModel.deleted_at.is_(None),
@@ -109,6 +113,7 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         delta_expense: int = 0,
     ) -> None:
         from src.infrastructure.adapters.driven.database import CircleFundModel
+
         stmt = (
             update(CircleFundModel)
             .where(
@@ -160,8 +165,8 @@ class CircleFundRepositoryImpl(CircleFundRepository):
             split_amounts=(
                 None
                 if txn.split_amounts is None
-                or txn.split_amounts == 'null'
-                or txn.split_amounts == 'undefined'
+                or txn.split_amounts == "null"
+                or txn.split_amounts == "undefined"
                 else txn.split_amounts
             ),
             paid_by=txn.paid_by or txn.author_id,
@@ -184,6 +189,7 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         from src.infrastructure.adapters.driven.database import (
             CircleFundTransactionModel,
         )
+
         conditions = [
             CircleFundTransactionModel.fund_id == fund_id,
             CircleFundTransactionModel.deleted_at.is_(None),
@@ -201,14 +207,22 @@ class CircleFundRepositoryImpl(CircleFundRepository):
                             end_month = 1
                             end_year = year_i + 1
                         end = date_type(end_year, end_month, 1)
-                        conditions.append(CircleFundTransactionModel.transaction_date >= start)
-                        conditions.append(CircleFundTransactionModel.transaction_date < end)
+                        conditions.append(
+                            CircleFundTransactionModel.transaction_date >= start
+                        )
+                        conditions.append(
+                            CircleFundTransactionModel.transaction_date < end
+                        )
                 except ValueError:
                     pass  # Invalid numbers, skip filter
         if type:
             conditions.append(CircleFundTransactionModel.type == type)
 
-        count_stmt = select(func.count()).select_from(CircleFundTransactionModel).where(*conditions)
+        count_stmt = (
+            select(func.count())
+            .select_from(CircleFundTransactionModel)
+            .where(*conditions)
+        )
         count_result = await self._session.execute(count_stmt)
         total = count_result.scalar() or 0
 
@@ -230,6 +244,7 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         from src.infrastructure.adapters.driven.database import (
             CircleFundTransactionModel,
         )
+
         stmt = select(CircleFundTransactionModel).where(
             CircleFundTransactionModel.id == txn_id,
             CircleFundTransactionModel.deleted_at.is_(None),
@@ -242,6 +257,7 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         from src.infrastructure.adapters.driven.database import (
             CircleFundTransactionModel,
         )
+
         stmt = (
             update(CircleFundTransactionModel)
             .where(CircleFundTransactionModel.id == txn_id)

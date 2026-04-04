@@ -47,6 +47,7 @@ async def add_comment(
     member = await repo.get_member(post.circle_id, author_id)
     if not member and not circle.is_owner(author_id) and post.author_id != author_id:
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Bạn không có quyền bình luận.")
 
     comment = CircleComment(
@@ -69,15 +70,19 @@ async def _get_user_info(db: AsyncSession, user_id: UUID) -> tuple[str, str | No
     from sqlalchemy import select
 
     from src.infrastructure.adapters.driven.database import UserModel
+
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
-    return (f"{user.name}" if user and user.name else f"User {str(user_id)[:8]}",
-            user.avatar_url if user else None)
+    return (
+        f"{user.name}" if user and user.name else f"User {str(user_id)[:8]}",
+        user.avatar_url if user else None,
+    )
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

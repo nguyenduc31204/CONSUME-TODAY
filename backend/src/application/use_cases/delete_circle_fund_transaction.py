@@ -30,6 +30,7 @@ async def delete_circle_fund_transaction(
 
     # Check permission: author or circle owner
     from src.application.use_cases.get_circle import get_circle as _get_circle
+
     circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
     if not circle:
         raise NotFoundException(message="Circle không tìm thấy.")
@@ -57,4 +58,5 @@ def _get_repo(db: AsyncSession) -> CircleFundRepository:
     from src.infrastructure.adapters.driven.circle_fund_repository_impl import (
         CircleFundRepositoryImpl,
     )
+
     return CircleFundRepositoryImpl(db)

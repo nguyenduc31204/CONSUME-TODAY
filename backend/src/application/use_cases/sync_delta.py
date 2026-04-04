@@ -93,7 +93,9 @@ def _transaction_to_dict(t) -> dict:
         "merchant_name": t.merchant_name,
         "amount": t.amount,
         "currency": t.currency,
-        "transaction_date": t.transaction_date.isoformat() if t.transaction_date else None,
+        "transaction_date": t.transaction_date.isoformat()
+        if t.transaction_date
+        else None,
         "note": t.note,
         "ocr_confidence": t.ocr_confidence,
         "is_life_log": t.is_life_log,

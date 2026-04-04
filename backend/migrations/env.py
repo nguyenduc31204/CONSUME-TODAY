@@ -2,6 +2,7 @@
 Alembic migration environment configuration.
 Async SQLAlchemy 2.0 + asyncpg support.
 """
+
 import asyncio
 from logging.config import fileConfig
 

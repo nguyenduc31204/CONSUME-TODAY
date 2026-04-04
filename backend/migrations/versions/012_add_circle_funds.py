@@ -22,14 +22,28 @@ def upgrade() -> None:
     # ── Circle Funds (one fund per circle) ─────────────────────
     op.create_table(
         "circle_funds",
-        sa.Column("id", sa.UUID(), nullable=False, server_default=sa.text("gen_random_uuid()")),
+        sa.Column(
+            "id", sa.UUID(), nullable=False, server_default=sa.text("gen_random_uuid()")
+        ),
         sa.Column("circle_id", sa.UUID(), nullable=False),
         sa.Column("balance", sa.BigInteger(), nullable=False, server_default="0"),
         sa.Column("total_income", sa.BigInteger(), nullable=False, server_default="0"),
         sa.Column("total_expense", sa.BigInteger(), nullable=False, server_default="0"),
-        sa.Column("currency", sa.String(length=3), nullable=False, server_default="VND"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "currency", sa.String(length=3), nullable=False, server_default="VND"
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -48,7 +62,9 @@ def upgrade() -> None:
     # ── Circle Fund Transactions ─────────────────────────────────
     op.create_table(
         "circle_fund_transactions",
-        sa.Column("id", sa.UUID(), nullable=False, server_default=sa.text("gen_random_uuid()")),
+        sa.Column(
+            "id", sa.UUID(), nullable=False, server_default=sa.text("gen_random_uuid()")
+        ),
         sa.Column("circle_id", sa.UUID(), nullable=False),
         sa.Column("fund_id", sa.UUID(), nullable=False),
         sa.Column("author_id", sa.UUID(), nullable=False),
@@ -57,7 +73,12 @@ def upgrade() -> None:
         sa.Column("description", sa.String(length=255), nullable=True),
         sa.Column("category", sa.String(length=100), nullable=True),
         sa.Column("merchant_name", sa.String(length=255), nullable=True),
-        sa.Column("transaction_date", sa.Date(), nullable=False, server_default=sa.text("CURRENT_DATE")),
+        sa.Column(
+            "transaction_date",
+            sa.Date(),
+            nullable=False,
+            server_default=sa.text("CURRENT_DATE"),
+        ),
         sa.Column("transaction_time", sa.Time(), nullable=True),
         sa.Column(
             "split_type",
@@ -71,18 +92,46 @@ def upgrade() -> None:
         sa.Column("split_amounts", sa.JSONB(), nullable=True),
         # {"user_id1": 50000, "user_id2": 30000}
         sa.Column("paid_by", sa.UUID(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("idx_cft_fund", "circle_fund_transactions", ["fund_id"])
     op.create_index("idx_cft_circle", "circle_fund_transactions", ["circle_id"])
     op.create_index("idx_cft_date", "circle_fund_transactions", ["transaction_date"])
-    op.create_foreign_key(None, "circle_fund_transactions", "circles", ["circle_id"], ["id"], ondelete="CASCADE")
-    op.create_foreign_key(None, "circle_fund_transactions", "circle_funds", ["fund_id"], ["id"], ondelete="CASCADE")
-    op.create_foreign_key(None, "circle_fund_transactions", "users", ["author_id"], ["id"])
-    op.create_foreign_key(None, "circle_fund_transactions", "users", ["paid_by"], ["id"])
+    op.create_foreign_key(
+        None,
+        "circle_fund_transactions",
+        "circles",
+        ["circle_id"],
+        ["id"],
+        ondelete="CASCADE",
+    )
+    op.create_foreign_key(
+        None,
+        "circle_fund_transactions",
+        "circle_funds",
+        ["fund_id"],
+        ["id"],
+        ondelete="CASCADE",
+    )
+    op.create_foreign_key(
+        None, "circle_fund_transactions", "users", ["author_id"], ["id"]
+    )
+    op.create_foreign_key(
+        None, "circle_fund_transactions", "users", ["paid_by"], ["id"]
+    )
 
 
 def downgrade() -> None:

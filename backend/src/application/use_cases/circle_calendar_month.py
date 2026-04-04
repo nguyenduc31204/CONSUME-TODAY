@@ -46,7 +46,9 @@ async def get_circle_calendar_month(
         .order_by(func.date(CirclePostModel.created_at))
     )
     count_result = await db.execute(count_stmt)
-    date_count: dict[str, int] = {str(row.post_date): int(row.count) for row in count_result.all()}
+    date_count: dict[str, int] = {
+        str(row.post_date): int(row.count) for row in count_result.all()
+    }
 
     # Thumbnails per day (max 3 per day)
     thumb_stmt = (

@@ -44,8 +44,12 @@ async def complete_task(
             due_date=saved.due_date,
             priority=saved.priority,
             status=saved.status,
-            related_transaction_id=str(saved.related_transaction_id) if saved.related_transaction_id else None,
-            related_circle_post_id=str(saved.related_circle_post_id) if saved.related_circle_post_id else None,
+            related_transaction_id=str(saved.related_transaction_id)
+            if saved.related_transaction_id
+            else None,
+            related_circle_post_id=str(saved.related_circle_post_id)
+            if saved.related_circle_post_id
+            else None,
             reminder_at=saved.reminder_at,
             completed_at=saved.completed_at,
             created_at=saved.created_at,
@@ -58,4 +62,5 @@ def _get_repo(db: AsyncSession) -> TaskRepository:
     from src.infrastructure.adapters.driven.task_repository_impl import (
         TaskRepositoryImpl,
     )
+
     return TaskRepositoryImpl(db)

@@ -11,7 +11,9 @@ from src.application.dtos.response.circle_dto import CircleItem
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None) -> CircleItem:
+def _circle_to_item(
+    circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None
+) -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -48,6 +50,7 @@ async def update_circle(
 
     if not circle.is_owner(user_id):
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Chỉ chủ nhóm mới có thể sửa.")
 
     if data.name is not None:
@@ -63,11 +66,18 @@ async def update_circle(
 
     saved = await repo.update_circle(circle)
     member_count = await repo.count_members(circle_id)
-    return _circle_to_item(saved, member_count=member_count, is_member=True, my_role="owner", my_status="approved")
+    return _circle_to_item(
+        saved,
+        member_count=member_count,
+        is_member=True,
+        my_role="owner",
+        my_status="approved",
+    )
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

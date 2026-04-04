@@ -14,7 +14,9 @@ from src.application.dtos.response.circle_dto import (
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None) -> CircleItem:
+def _circle_to_item(
+    circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None
+) -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -40,7 +42,7 @@ def _member_to_item(member, name="", avatar_url=None) -> MemberItem:
         name=name or f"User {str(member.user_id)[:8]}",
         avatar_url=avatar_url,
         role=member.role,
-        status=getattr(member, 'status', 'approved'),
+        status=getattr(member, "status", "approved"),
         joined_at=member.joined_at,
     )
 
@@ -82,7 +84,13 @@ async def get_circle(
         pending_members = await repo.list_pending_members(circle_id)
 
     return CircleDetailResponse(
-        circle=_circle_to_item(circle, member_count=member_count, is_member=is_member, my_role=my_role, my_status=my_status),
+        circle=_circle_to_item(
+            circle,
+            member_count=member_count,
+            is_member=is_member,
+            my_role=my_role,
+            my_status=my_status,
+        ),
         members=[_member_to_item(m) for m in members],
         pending_members=[_member_to_item(p) for p in pending_members],
     )
@@ -92,4 +100,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

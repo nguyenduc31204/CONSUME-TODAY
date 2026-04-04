@@ -13,7 +13,14 @@ from src.domain.entities.circle_member import CircleMember
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role="owner", my_status="approved") -> CircleItem:
+def _circle_to_item(
+    circle,
+    member_count=0,
+    post_count=0,
+    is_member=True,
+    my_role="owner",
+    my_status="approved",
+) -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -65,6 +72,7 @@ async def create_circle(
 
     # Init quỹ chung cho circle
     from src.application.use_cases.get_circle_fund import init_circle_fund
+
     await init_circle_fund(db, saved.id)
 
     # Generate invite code (6 chars from circle id)
@@ -80,4 +88,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

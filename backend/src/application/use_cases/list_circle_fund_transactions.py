@@ -49,7 +49,9 @@ async def list_circle_fund_transactions(
                 description=t.description,
                 category=t.category,
                 merchant_name=t.merchant_name,
-                transaction_date=t.transaction_date.isoformat() if t.transaction_date else None,
+                transaction_date=t.transaction_date.isoformat()
+                if t.transaction_date
+                else None,
                 transaction_time=t.transaction_time,
                 split_type=t.split_type,
                 split_amounts=t.split_amounts,
@@ -67,4 +69,5 @@ def _get_repo(db: AsyncSession) -> CircleFundRepository:
     from src.infrastructure.adapters.driven.circle_fund_repository_impl import (
         CircleFundRepositoryImpl,
     )
+
     return CircleFundRepositoryImpl(db)

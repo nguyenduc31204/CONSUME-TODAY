@@ -386,9 +386,7 @@ async def upload_and_capture(
                     tzinfo=None
                 )
                 if ocr_result.date
-                else utc_now().replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
+                else utc_now().replace(hour=0, minute=0, second=0, microsecond=0)
             ),
             ocr_confidence=ocr_result.confidence,
             is_life_log=False,
@@ -500,7 +498,9 @@ async def create_manual_transaction(
     saved = await repo.save(transaction)
 
     # Sync wallet balance
-    await _sync_wallet_balance(db, wallet_id, -(saved.amount) if not saved.is_income else saved.amount)
+    await _sync_wallet_balance(
+        db, wallet_id, -(saved.amount) if not saved.is_income else saved.amount
+    )
 
     wallets, categories = await _build_name_cache(db, user_id)
     tx_data = _enrich_tx(saved, wallets, categories)

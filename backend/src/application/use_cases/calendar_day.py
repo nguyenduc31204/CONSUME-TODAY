@@ -32,8 +32,12 @@ async def get_calendar_day(
 
     # Query transactions with category join
     stmt = (
-        select(TransactionModel, CategoryModel.name.label("cat_name"),
-               CategoryModel.icon.label("cat_icon"), CategoryModel.color.label("cat_color"))
+        select(
+            TransactionModel,
+            CategoryModel.name.label("cat_name"),
+            CategoryModel.icon.label("cat_icon"),
+            CategoryModel.color.label("cat_color"),
+        )
         .outerjoin(
             CategoryModel,
             TransactionModel.category_id == CategoryModel.id,
@@ -67,7 +71,9 @@ async def get_calendar_day(
             "category_icon": row.cat_icon,
             "category_color": row.cat_color,
             "is_life_log": tx.is_life_log,
-            "transaction_date": tx.transaction_date.isoformat() if tx.transaction_date else None,
+            "transaction_date": tx.transaction_date.isoformat()
+            if tx.transaction_date
+            else None,
         }
         transactions.append(TransactionInDay(**tx_dict))
 

@@ -27,6 +27,7 @@ async def reject_join_request(
     req_member = await repo.get_member(circle_id, requester_id)
     if not req_member or req_member.role != "owner":
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Chỉ trưởng nhóm mới có thể từ chối yêu cầu.")
 
     # Soft-delete the pending request
@@ -38,4 +39,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

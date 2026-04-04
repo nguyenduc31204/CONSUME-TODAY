@@ -1,6 +1,7 @@
 """
 Unit tests for OCR validation domain service.
 """
+
 from src.domain.services.domain_service import OcrValidationService
 
 
@@ -18,7 +19,9 @@ class TestOcrValidationService:
         total = 100000
         items = [40000, 35000, 25000]
         # Actual sum = 100000, but let's say OCR slightly misread
-        assert OcrValidationService.validate_amount_consistency(total + 500, items) is True
+        assert (
+            OcrValidationService.validate_amount_consistency(total + 500, items) is True
+        )
 
     def test_validate_amount_consistency_fails(self):
         """Invalid when total significantly differs from sum of items."""

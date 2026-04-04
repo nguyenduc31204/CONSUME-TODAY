@@ -39,11 +39,13 @@ def upgrade() -> None:
             nullable=False,
             server_default="private",
         ),
+        sa.Column("max_members", sa.Integer(), nullable=False, server_default="10"),
         sa.Column(
-            "max_members", sa.Integer(), nullable=False, server_default="10"
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
         ),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["owner_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
@@ -65,9 +67,15 @@ def upgrade() -> None:
         sa.Column(
             "role", sa.String(length=20), nullable=False, server_default="member"
         ),
-        sa.Column("joined_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "joined_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["circle_id"], ["circles.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
@@ -92,14 +100,14 @@ def upgrade() -> None:
             nullable=False,
             server_default="false",
         ),
+        sa.Column("like_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("comment_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column(
-            "like_count", sa.Integer(), nullable=False, server_default="0"
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
         ),
         sa.Column(
-            "comment_count", sa.Integer(), nullable=False, server_default="0"
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
         ),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["circle_id"], ["circles.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["author_id"], ["users.id"], ondelete="CASCADE"),
@@ -116,8 +124,12 @@ def upgrade() -> None:
         sa.Column("post_id", sa.UUID(), nullable=False),
         sa.Column("author_id", sa.UUID(), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["post_id"], ["circle_posts.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["author_id"], ["users.id"], ondelete="CASCADE"),
@@ -131,9 +143,15 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("post_id", sa.UUID(), nullable=False),
         sa.Column("user_id", sa.UUID(), nullable=False),
-        sa.Column("liked_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "liked_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.func.now()
+        ),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["post_id"], ["circle_posts.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),

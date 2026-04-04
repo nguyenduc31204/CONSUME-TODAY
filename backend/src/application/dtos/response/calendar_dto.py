@@ -2,7 +2,6 @@
 Response DTOs — Pydantic models for Calendar API responses.
 """
 
-
 from pydantic import BaseModel
 
 

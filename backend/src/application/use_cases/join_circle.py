@@ -26,9 +26,7 @@ async def join_circle(
     from src.infrastructure.adapters.driven.database import CircleModel
 
     # Invite code = last 6 of UUID uppercase
-    stmt = select(CircleModel).where(
-        CircleModel.deleted_at.is_(None)
-    )
+    stmt = select(CircleModel).where(CircleModel.deleted_at.is_(None))
     result = await db.execute(stmt)
     circle = None
     for c in result.scalars().all():
@@ -50,6 +48,7 @@ async def join_circle(
     is_owner = str(circle.owner_id) == str(user_id)
     if is_owner:
         from src.domain.entities.circle_member import CircleMember
+
         member = CircleMember(
             circle_id=circle.id,
             user_id=user_id,
@@ -63,6 +62,7 @@ async def join_circle(
     member_count = await repo.count_members(circle.id)
     if member_count >= circle.max_members:
         from src.infrastructure.shared.exceptions import AppException
+
         raise AppException(
             message=f"Nhóm đã đạt giới hạn {circle.max_members} thành viên.",
             code="CIRCLE_FULL",
@@ -70,6 +70,7 @@ async def join_circle(
 
     # Create pending request
     from src.domain.entities.circle_member import CircleMember
+
     member = CircleMember(
         circle_id=circle.id,
         user_id=user_id,
@@ -84,4 +85,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

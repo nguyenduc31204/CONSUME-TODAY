@@ -25,6 +25,7 @@ async def leave_circle(
 
     if circle.is_owner(user_id):
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(
             message="Chủ nhóm không thể rời nhóm. Hãy xóa nhóm nếu muốn giải tán."
         )
@@ -37,4 +38,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)
