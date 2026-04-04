@@ -278,7 +278,7 @@ export function useSync() {
     window.addEventListener('offline', handleOffline)
 
     // Initial sync on mount (when online)
-    if (navigator.onLine) {
+    if (window.navigator.onLine) {
       sync()
     }
 

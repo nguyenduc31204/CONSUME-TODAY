@@ -233,7 +233,7 @@ export default function CircleDetailPage() {
 
   // Leave circle
   const handleLeave = async () => {
-    if (!confirm('Bạn có chắc muốn rời nhóm này?')) return
+    if (!window.confirm('Bạn có chắc muốn rời nhóm này?')) return
     await leaveCircle.mutateAsync(id!)
     navigate('/circles', { replace: true })
   }
