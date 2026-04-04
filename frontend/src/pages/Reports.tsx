@@ -4,11 +4,17 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { TrendingUp, TrendingDown, RefreshCw, BarChart3 } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, BarChart3, ClipboardList } from 'lucide-react'
 import { reportsApi } from '@/api/reports'
 import { formatVND } from '@/utils/formatters'
 import { useAuthStore } from '@/stores/authStore'
+import { cn } from '@/utils/cn'
+import { TasksContent } from '@/components/tasks/TasksContent'
 import type { ReportPeriod } from '@/types/report'
+
+// ── Sub-tab types ───────────────────────────────────────────────
+
+type SubTab = 'reports' | 'tasks'
 
 // ── Period Toggle ────────────────────────────────────────────────
 
@@ -109,7 +115,8 @@ function SkeletonChart() {
 // ── Reports Page ─────────────────────────────────────────────────
 
 export default function Reports() {
-  const [period, setPeriod] = useState<ReportPeriod>('week')
+  const [period, _setPeriod] = useState<ReportPeriod>('week')
+  const [subTab, setSubTab] = useState<SubTab>('reports')
   const accessToken = useAuthStore((s) => s.accessToken)
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
@@ -146,30 +153,39 @@ export default function Reports() {
   return (
     <div className="px-4 py-6">
       {/* Header */}
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Nhìn lại</h1>
         {isFetching && !isLoading && <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />}
       </div>
 
-      {/* Period Toggle */}
-      <div className="mb-6 flex items-center gap-1 rounded-full bg-gray-100 p-1">
-        {PERIODS.map(({ label, value }) => (
-          <button
-            key={value}
-            onClick={() => setPeriod(value)}
-            className={`flex-1 rounded-full px-3 py-2 text-xs font-medium transition-all ${
-              period === value
-                ? 'bg-white shadow-sm text-gray-900'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Sub-tab Navigation */}
+      <div className="mb-5 flex items-center gap-1 rounded-full bg-gray-100 p-1">
+        <button
+          onClick={() => setSubTab('reports')}
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-all',
+            subTab === 'reports' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700',
+          )}
+        >
+          <BarChart3 className="h-3.5 w-3.5" />
+          Báo cáo
+        </button>
+        <button
+          onClick={() => setSubTab('tasks')}
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-all',
+            subTab === 'tasks' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700',
+          )}
+        >
+          <ClipboardList className="h-3.5 w-3.5" />
+          Nhiệm vụ
+        </button>
       </div>
 
       {/* Content */}
-      {isLoading ? (
+      {subTab === 'tasks' ? (
+        <TasksContent />
+      ) : isLoading ? (
         <SkeletonChart />
       ) : isError ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">

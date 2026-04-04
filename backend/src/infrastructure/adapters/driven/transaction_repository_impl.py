@@ -91,6 +91,7 @@ class TransactionRepositoryImpl(TransactionRepository):
         category_id: UUID | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        updated_since: datetime | None = None,
         skip: int = 0,
         limit: int = 50,
     ) -> tuple[list[Transaction], int]:
@@ -108,6 +109,8 @@ class TransactionRepositoryImpl(TransactionRepository):
             conditions.append(TransactionModel.transaction_date >= start_date)
         if end_date:
             conditions.append(TransactionModel.transaction_date <= end_date)
+        if updated_since:
+            conditions.append(TransactionModel.updated_at > updated_since)
 
         # Count
         count_stmt = (

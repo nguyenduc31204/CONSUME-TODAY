@@ -7,11 +7,13 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -78,6 +80,12 @@ class UserModel(Base):
     )
     images: Mapped[list["ImageModel"]] = relationship(
         "ImageModel", back_populates="user", lazy="selectin"
+    )
+    circles: Mapped[list["CircleModel"]] = relationship(
+        "CircleModel", back_populates="owner", lazy="selectin"
+    )
+    circle_memberships: Mapped[list["CircleMemberModel"]] = relationship(
+        "CircleMemberModel", back_populates="user", lazy="selectin"
     )
 
 
@@ -246,6 +254,224 @@ class ImageModel(Base):
 
     # Relationships
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="images")
+
+
+class TaskModel(Base):
+    """ORM model for Task entity."""
+
+    __tablename__ = "tasks"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=lambda ctx: ctx.current_parameters.get("id") or uuid4(),
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    due_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    priority: Mapped[str] = mapped_column(
+        String(20), default="medium", nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default="pending", nullable=False
+    )
+    related_transaction_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True
+    )
+    related_circle_post_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True), ForeignKey("circle_posts.id", ondelete="SET NULL"), nullable=True
+    )
+    reminder_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    user: Mapped["UserModel"] = relationship("UserModel")
+    related_transaction: Mapped["TransactionModel | None"] = relationship(
+        "TransactionModel", foreign_keys=[related_transaction_id], lazy="selectin"
+    )
+    related_circle_post: Mapped["CirclePostModel | None"] = relationship(
+        "CirclePostModel", foreign_keys=[related_circle_post_id], lazy="selectin"
+    )
+
+
+class CircleModel(Base):
+    """ORM model for Circle entity."""
+
+    __tablename__ = "circles"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    owner_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    visibility: Mapped[str] = mapped_column(String(20), default="members_only", nullable=False)
+    circle_type: Mapped[str] = mapped_column(String(20), default="private", nullable=False)
+    max_members: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    owner: Mapped["UserModel"] = relationship("UserModel")
+    members: Mapped[list["CircleMemberModel"]] = relationship(
+        "CircleMemberModel", back_populates="circle", lazy="selectin"
+    )
+    posts: Mapped[list["CirclePostModel"]] = relationship(
+        "CirclePostModel", back_populates="circle", lazy="selectin"
+    )
+
+
+class CircleMemberModel(Base):
+    """ORM model for CircleMember entity."""
+
+    __tablename__ = "circle_members"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    circle_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(String(20), default="member", nullable=False)
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    circle: Mapped["CircleModel"] = relationship("CircleModel", back_populates="members")
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="circle_memberships")
+
+
+class CirclePostModel(Base):
+    """ORM model for CirclePost entity."""
+
+    __tablename__ = "circle_posts"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    circle_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    image_url: Mapped[str] = mapped_column(Text, nullable=False)
+    caption: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ocr_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_visible_link: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    circle: Mapped["CircleModel"] = relationship("CircleModel", back_populates="posts")
+    author: Mapped["UserModel"] = relationship("UserModel")
+    comments: Mapped[list["CircleCommentModel"]] = relationship(
+        "CircleCommentModel", back_populates="post", lazy="selectin"
+    )
+
+
+class CircleCommentModel(Base):
+    """ORM model for CircleComment entity."""
+
+    __tablename__ = "circle_comments"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    post_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circle_posts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    post: Mapped["CirclePostModel"] = relationship("CirclePostModel", back_populates="comments")
+    author: Mapped["UserModel"] = relationship("UserModel")
+
+
+class CircleLikeModel(Base):
+    """ORM model for CircleLike entity."""
+
+    __tablename__ = "circle_likes"
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+    post_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("circle_posts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    liked_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 # ── Database Engine & Session ────────────────────────────────
