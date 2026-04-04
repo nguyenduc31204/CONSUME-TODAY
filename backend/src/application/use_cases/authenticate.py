@@ -194,7 +194,9 @@ class AuthenticateUseCase:
         # Create first-login defaults
         await self._create_first_login_defaults(user.id)
 
-        access_token, refresh_token = self._jwt.create_token_pair(user.id, name=user.name, email=user.email)
+        access_token, refresh_token = self._jwt.create_token_pair(
+            user.id, name=user.name, email=user.email
+        )
         return user, access_token, refresh_token
 
     async def login_with_email(
@@ -227,5 +229,7 @@ class AuthenticateUseCase:
                 message="Invalid email or password.", code="ERR_INVALID_CREDENTIALS"
             )
 
-        access_token, refresh_token = self._jwt.create_token_pair(user.id, name=user.name, email=user.email)
+        access_token, refresh_token = self._jwt.create_token_pair(
+            user.id, name=user.name, email=user.email
+        )
         return user, access_token, refresh_token

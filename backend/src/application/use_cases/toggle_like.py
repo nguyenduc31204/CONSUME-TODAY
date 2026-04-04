@@ -4,6 +4,7 @@ ToggleLikeUseCase — Thích / bỏ thích bài viết.
 
 from uuid import UUID
 
+import asyncpg
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,9 +61,21 @@ async def toggle_like(
             post_id=post_id,
             user_id=user_id,
         )
-        await repo.save_like(new_like)
-        post.increment_likes()
-        liked = True
+        try:
+            await repo.save_like(new_like)
+            post.increment_likes()
+            liked = True
+        except Exception as exc:
+            # Race condition: another request inserted the like between our check
+            # and our insert. The DB already has the like + correct count.
+            # Just remove the duplicate and return liked=False (toggle off).
+            # SQLAlchemy wraps asyncpg errors under .orig (not __cause__)
+            underlying = getattr(exc, "orig", None) or getattr(exc, "__cause__", None)
+            if isinstance(underlying, asyncpg.UniqueViolationError):
+                await repo.remove_like(post_id, user_id)
+                liked = False
+            else:
+                raise
 
     await repo.update_post(post)
 
