@@ -17,6 +17,9 @@ import {
   useCircle, useCirclePosts, useRemoveMember, useLeaveCircle,
   useInviteMember, useCircleCalendarMonth, useCircleCalendarDay,
   useApproveJoinRequest, useRejectJoinRequest,
+  useCircleFund, useCircleFundTransactions,
+  useAddCircleFundTransaction, useDeleteCircleFundTransaction,
+  useDeletePost,
 } from '@/hooks/useCircles'
 import { PostCard } from '@/components/circles/PostCard'
 import { PostDetailSheet } from '@/components/circles/PostDetailSheet'
@@ -26,10 +29,6 @@ import { CircleSettings } from '@/components/circles/CircleSettings'
 import { CircleUploadSheet } from '@/components/circles/CircleUploadSheet'
 import { CircleFundCard } from '@/components/circles/CircleFundCard'
 import { AddFundTransactionSheet } from '@/components/circles/AddFundTransactionSheet'
-import {
-  useCircleFund, useCircleFundTransactions,
-  useAddCircleFundTransaction, useDeleteCircleFundTransaction,
-} from '@/hooks/useCircles'
 import type {
   PostItem, CirclePostCalendarDay,
 } from '@/api/circles'
@@ -168,6 +167,7 @@ export default function CircleDetailPage() {
   const inviteMember = useInviteMember()
   const approveJoin = useApproveJoinRequest()
   const rejectJoin = useRejectJoinRequest()
+  const deletePost = useDeletePost()
 
   // ── Calendar state ─────────────────────────────────────────────
   const [calendarMonth, setCalendarMonth] = useState(() => new Date())
@@ -245,7 +245,9 @@ export default function CircleDetailPage() {
   }
 
   // Post deleted from detail sheet
-  const handlePostDeleted = () => {
+  const handlePostDeleted = async () => {
+    if (!selectedPost) return
+    await deletePost.mutateAsync({ circleId: id!, postId: selectedPost.id })
     setSelectedPost(null)
     refetchPosts()
   }
