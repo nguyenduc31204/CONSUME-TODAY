@@ -3,7 +3,6 @@ WalletRepositoryImpl — SQLAlchemy async implementation of WalletRepository.
 Driven adapter: persistence.
 """
 
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update

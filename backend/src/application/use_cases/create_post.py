@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dtos.request.circle_dto import CreatePostRequest
-from src.application.dtos.response.circle_dto import PostCreatedResponse, PostItem
+from src.application.dtos.response.circle_dto import PostItem
 from src.domain.entities.circle_post import CirclePost
 from src.domain.repositories.circle_repository import CircleRepository
 
@@ -68,8 +68,9 @@ async def create_post(
 
 
 async def _get_user_info(db: AsyncSession, user_id: UUID) -> tuple[str, str | None]:
-    from src.infrastructure.adapters.driven.database import UserModel
     from sqlalchemy import select
+
+    from src.infrastructure.adapters.driven.database import UserModel
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -78,5 +79,7 @@ async def _get_user_info(db: AsyncSession, user_id: UUID) -> tuple[str, str | No
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
-    from src.infrastructure.adapters.driven.circle_repository_impl import CircleRepositoryImpl
+    from src.infrastructure.adapters.driven.circle_repository_impl import (
+        CircleRepositoryImpl,
+    )
     return CircleRepositoryImpl(db)

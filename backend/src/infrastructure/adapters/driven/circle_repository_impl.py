@@ -80,9 +80,9 @@ def _map_comment(model) -> CircleComment:
 def _get_model(db: AsyncSession, model_name: str):
     """Get ORM model class from database module."""
     from src.infrastructure.adapters.driven.database import (
-        CircleModel,
         CircleCommentModel,
         CircleMemberModel,
+        CircleModel,
         CirclePostModel,
     )
     return {
@@ -129,7 +129,10 @@ class CircleRepositoryImpl(CircleRepository):
         return _map_circle(model) if model else None
 
     async def list_circles_for_user(self, user_id: UUID) -> list[Circle]:
-        from src.infrastructure.adapters.driven.database import CircleMemberModel, CircleModel
+        from src.infrastructure.adapters.driven.database import (
+            CircleMemberModel,
+            CircleModel,
+        )
         # Get circles where user is owner OR approved member
         stmt = (
             select(CircleModel)
@@ -155,7 +158,10 @@ class CircleRepositoryImpl(CircleRepository):
     async def list_circles_for_user_since(
         self, user_id: UUID, since: datetime | None
     ) -> list[Circle]:
-        from src.infrastructure.adapters.driven.database import CircleMemberModel, CircleModel
+        from src.infrastructure.adapters.driven.database import (
+            CircleMemberModel,
+            CircleModel,
+        )
         conditions = [
             CircleModel.deleted_at.is_(None),
             (CircleModel.owner_id == user_id)
@@ -358,7 +364,10 @@ class CircleRepositoryImpl(CircleRepository):
         skip: int = 0,
         limit: int = 10000,
     ) -> tuple[list[CirclePost], int]:
-        from src.infrastructure.adapters.driven.database import CircleMemberModel, CirclePostModel
+        from src.infrastructure.adapters.driven.database import (
+            CircleMemberModel,
+            CirclePostModel,
+        )
         # Posts from circles the user is a member of
         conditions = [
             CirclePostModel.deleted_at.is_(None),

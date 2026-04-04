@@ -67,6 +67,7 @@ async def add_comment(
 
 async def _get_user_info(db: AsyncSession, user_id: UUID) -> tuple[str, str | None]:
     from sqlalchemy import select
+
     from src.infrastructure.adapters.driven.database import UserModel
     stmt = select(UserModel).where(UserModel.id == user_id)
     result = await db.execute(stmt)
@@ -76,5 +77,7 @@ async def _get_user_info(db: AsyncSession, user_id: UUID) -> tuple[str, str | No
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
-    from src.infrastructure.adapters.driven.circle_repository_impl import CircleRepositoryImpl
+    from src.infrastructure.adapters.driven.circle_repository_impl import (
+        CircleRepositoryImpl,
+    )
     return CircleRepositoryImpl(db)

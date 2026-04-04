@@ -3,7 +3,6 @@ ImageRepositoryImpl — SQLAlchemy async implementation of ImageRepository.
 Driven adapter: persistence.
 """
 
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update

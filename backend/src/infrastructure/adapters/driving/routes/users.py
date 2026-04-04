@@ -4,10 +4,7 @@ Phase 5: User stats endpoint for profile page.
 Phase 6+: Profile edit (name, avatar_url) + avatar upload to R2.
 """
 
-from datetime import datetime
 from uuid import UUID
-
-from src.infrastructure.shared.datetime_utils import utc_now
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel, Field
@@ -16,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.infrastructure.adapters.driven.database import get_db
 from src.infrastructure.adapters.driven.jwt_service import JWTService
+from src.infrastructure.shared.datetime_utils import utc_now
 from src.infrastructure.shared.exceptions import ForbiddenException
 
 router = APIRouter()

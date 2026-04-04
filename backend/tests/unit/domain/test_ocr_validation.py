@@ -1,7 +1,6 @@
 """
 Unit tests for OCR validation domain service.
 """
-import pytest
 from src.domain.services.domain_service import OcrValidationService
 
 

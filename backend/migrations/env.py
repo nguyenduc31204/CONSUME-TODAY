@@ -5,15 +5,15 @@ Async SQLAlchemy 2.0 + asyncpg support.
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
+from src.config import get_settings
 
 # Import Base and models so Alembic can detect them
 from src.infrastructure.adapters.driven.database import Base
-from src.config import get_settings
 
 # Alembic Config object
 config = context.config

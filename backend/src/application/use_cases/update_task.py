@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dtos.request.task_dto import UpdateTaskRequest
 from src.application.dtos.response.task_dto import TaskDetailResponse, TaskItem
-from src.domain.entities.task import Task
 from src.domain.repositories.task_repository import TaskRepository
 
 
@@ -65,5 +64,7 @@ async def update_task(
 
 
 def _get_repo(db: AsyncSession) -> TaskRepository:
-    from src.infrastructure.adapters.driven.task_repository_impl import TaskRepositoryImpl
+    from src.infrastructure.adapters.driven.task_repository_impl import (
+        TaskRepositoryImpl,
+    )
     return TaskRepositoryImpl(db)

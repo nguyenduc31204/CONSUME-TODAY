@@ -39,5 +39,7 @@ async def approve_join_request(
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
-    from src.infrastructure.adapters.driven.circle_repository_impl import CircleRepositoryImpl
+    from src.infrastructure.adapters.driven.circle_repository_impl import (
+        CircleRepositoryImpl,
+    )
     return CircleRepositoryImpl(db)

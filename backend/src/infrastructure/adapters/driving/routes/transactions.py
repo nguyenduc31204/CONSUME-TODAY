@@ -5,8 +5,6 @@ Transaction Routes — Full CRUD + Phase 3: Upload + OCR + Auto-Save + Life Log.
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from src.infrastructure.shared.datetime_utils import utc_now
-
 from fastapi import APIRouter, Depends, File, Header, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -34,6 +32,7 @@ from src.infrastructure.adapters.driven.transaction_repository_impl import (
 from src.infrastructure.adapters.driven.wallet_repository_impl import (
     WalletRepositoryImpl,
 )
+from src.infrastructure.shared.datetime_utils import utc_now
 from src.infrastructure.shared.exceptions import ForbiddenException, NotFoundException
 
 router = APIRouter()

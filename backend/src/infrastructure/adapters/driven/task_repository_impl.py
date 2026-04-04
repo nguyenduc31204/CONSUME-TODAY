@@ -3,10 +3,10 @@ TaskRepositoryImpl — SQLAlchemy async implementation of TaskRepository.
 Driven adapter: persistence.
 """
 
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.task import Task

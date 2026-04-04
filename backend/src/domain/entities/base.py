@@ -4,12 +4,12 @@ Provides UUID primary key + audit columns (created_at, updated_at, deleted_at).
 NOT a dataclass — subclasses use dataclass WITHOUT inheriting from dataclass-generated __init__.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class BaseEntity:

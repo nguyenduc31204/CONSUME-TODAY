@@ -2,7 +2,6 @@
 CalendarMonthUseCase — Số kỷ niệm mỗi ngày trong tháng.
 """
 
-import calendar
 from datetime import datetime
 from uuid import UUID
 
