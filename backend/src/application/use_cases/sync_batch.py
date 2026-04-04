@@ -55,12 +55,14 @@ class SyncBatchUseCase:
                 result = await self._process_operation(user_id, op)
                 results.append(result)
             except Exception as exc:
-                results.append(SyncOperationResult(
-                    client_id=op.client_id,
-                    success=False,
-                    server_id=None,
-                    error=str(exc),
-                ))
+                results.append(
+                    SyncOperationResult(
+                        client_id=op.client_id,
+                        success=False,
+                        server_id=None,
+                        error=str(exc),
+                    )
+                )
 
         synced = sum(1 for r in results if r.success)
         failed = len(results) - synced
@@ -103,13 +105,17 @@ class SyncBatchUseCase:
             tx = Transaction(
                 user_id=user_id,
                 wallet_id=UUID(payload["wallet_id"]),
-                category_id=UUID(payload["category_id"]) if payload.get("category_id") else None,
+                category_id=UUID(payload["category_id"])
+                if payload.get("category_id")
+                else None,
                 image_url=payload.get("image_url"),
                 thumbnail_url=payload.get("thumbnail_url"),
                 merchant_name=payload.get("merchant_name"),
                 amount=payload.get("amount", 0),
                 currency=payload.get("currency", "VND"),
-                transaction_date=datetime.fromisoformat(payload["transaction_date"]) if payload.get("transaction_date") else None,
+                transaction_date=datetime.fromisoformat(payload["transaction_date"])
+                if payload.get("transaction_date")
+                else None,
                 note=payload.get("note"),
                 ocr_confidence=payload.get("ocr_confidence", 0.0),
                 is_life_log=payload.get("is_life_log", False),
@@ -126,7 +132,9 @@ class SyncBatchUseCase:
 
         elif op.type == "UPDATE":
             if not op.entity_id:
-                raise ValidationException(message="entity_id required for UPDATE", code="ERR_SYNC_MISSING_ID")
+                raise ValidationException(
+                    message="entity_id required for UPDATE", code="ERR_SYNC_MISSING_ID"
+                )
             tx_id = UUID(op.entity_id)
             tx = await self._tx_repo.get_by_id(tx_id)
             if tx is None:
@@ -148,7 +156,9 @@ class SyncBatchUseCase:
             if "amount" in payload:
                 tx.amount = payload["amount"]
             if "category_id" in payload:
-                tx.category_id = UUID(payload["category_id"]) if payload["category_id"] else None
+                tx.category_id = (
+                    UUID(payload["category_id"]) if payload["category_id"] else None
+                )
             if "wallet_id" in payload:
                 tx.wallet_id = UUID(payload["wallet_id"])
             if "note" in payload:
@@ -170,7 +180,9 @@ class SyncBatchUseCase:
 
         elif op.type == "DELETE":
             if not op.entity_id:
-                raise ValidationException(message="entity_id required for DELETE", code="ERR_SYNC_MISSING_ID")
+                raise ValidationException(
+                    message="entity_id required for DELETE", code="ERR_SYNC_MISSING_ID"
+                )
             await self._tx_repo.soft_delete(UUID(op.entity_id))
             return SyncOperationResult(
                 client_id=op.client_id,
@@ -210,10 +222,14 @@ class SyncBatchUseCase:
 
         elif op.type == "UPDATE":
             if not op.entity_id:
-                raise ValidationException(message="entity_id required for UPDATE", code="ERR_SYNC_MISSING_ID")
+                raise ValidationException(
+                    message="entity_id required for UPDATE", code="ERR_SYNC_MISSING_ID"
+                )
             post = await self._circle_repo.get_post_by_id(UUID(op.entity_id))
             if post is None:
-                return SyncOperationResult(client_id=op.client_id, success=False, error="ERR_NOT_FOUND")
+                return SyncOperationResult(
+                    client_id=op.client_id, success=False, error="ERR_NOT_FOUND"
+                )
             payload = op.payload or {}
             if "caption" in payload:
                 post.caption = payload["caption"]
@@ -221,16 +237,24 @@ class SyncBatchUseCase:
                 post.is_visible_link = payload["is_visible_link"]
             post.touch()
             updated = await self._circle_repo.update_post(post)
-            return SyncOperationResult(client_id=op.client_id, success=True, server_id=str(updated.id))
+            return SyncOperationResult(
+                client_id=op.client_id, success=True, server_id=str(updated.id)
+            )
 
         elif op.type == "DELETE":
             if not op.entity_id:
-                raise ValidationException(message="entity_id required for DELETE", code="ERR_SYNC_MISSING_ID")
+                raise ValidationException(
+                    message="entity_id required for DELETE", code="ERR_SYNC_MISSING_ID"
+                )
             await self._circle_repo.soft_delete_post(UUID(op.entity_id))
-            return SyncOperationResult(client_id=op.client_id, success=True, server_id=None)
+            return SyncOperationResult(
+                client_id=op.client_id, success=True, server_id=None
+            )
 
         else:
-            raise ValidationException(message=f"Unknown op type: {op.type}", code="ERR_SYNC_UNKNOWN_OP")
+            raise ValidationException(
+                message=f"Unknown op type: {op.type}", code="ERR_SYNC_UNKNOWN_OP"
+            )
 
     async def _process_comment_op(
         self,
@@ -254,14 +278,24 @@ class SyncBatchUseCase:
 
         elif op.type == "DELETE":
             if not op.entity_id:
-                raise ValidationException(message="entity_id required for DELETE", code="ERR_SYNC_MISSING_ID")
+                raise ValidationException(
+                    message="entity_id required for DELETE", code="ERR_SYNC_MISSING_ID"
+                )
             comment = await self._circle_repo.get_comment_by_id(UUID(op.entity_id))
             if comment is None:
-                return SyncOperationResult(client_id=op.client_id, success=False, error="ERR_NOT_FOUND")
+                return SyncOperationResult(
+                    client_id=op.client_id, success=False, error="ERR_NOT_FOUND"
+                )
             if comment.author_id != user_id:
-                return SyncOperationResult(client_id=op.client_id, success=False, error="ERR_FORBIDDEN")
+                return SyncOperationResult(
+                    client_id=op.client_id, success=False, error="ERR_FORBIDDEN"
+                )
             await self._circle_repo.soft_delete_comment(UUID(op.entity_id))
-            return SyncOperationResult(client_id=op.client_id, success=True, server_id=None)
+            return SyncOperationResult(
+                client_id=op.client_id, success=True, server_id=None
+            )
 
         else:
-            raise ValidationException(message=f"Unknown op type: {op.type}", code="ERR_SYNC_UNKNOWN_OP")
+            raise ValidationException(
+                message=f"Unknown op type: {op.type}", code="ERR_SYNC_UNKNOWN_OP"
+            )

@@ -10,7 +10,9 @@ from src.application.dtos.response.circle_dto import CircleItem, CircleListRespo
 from src.domain.repositories.circle_repository import CircleRepository
 
 
-def _circle_to_item(circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None) -> CircleItem:
+def _circle_to_item(
+    circle, member_count=0, post_count=0, is_member=True, my_role=None, my_status=None
+) -> CircleItem:
     return CircleItem(
         id=str(circle.id),
         name=circle.name,
@@ -44,14 +46,16 @@ async def list_circles(
     for circle in circles:
         member_count = await repo.count_members(circle.id)
         # post_count via separate query would be expensive — omit or add to repository
-        items.append(_circle_to_item(
-            circle,
-            member_count=member_count,
-            post_count=0,  # TODO: add post_count to circle model or query
-            is_member=True,
-            my_role="owner" if circle.owner_id == user_id else "member",
-            my_status="approved",
-        ))
+        items.append(
+            _circle_to_item(
+                circle,
+                member_count=member_count,
+                post_count=0,  # TODO: add post_count to circle model or query
+                is_member=True,
+                my_role="owner" if circle.owner_id == user_id else "member",
+                my_status="approved",
+            )
+        )
 
     return CircleListResponse(items=items, total=len(items))
 
@@ -60,4 +64,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

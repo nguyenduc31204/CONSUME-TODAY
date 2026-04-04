@@ -5,6 +5,7 @@ Revision ID: 004
 Revises: 003
 Create Date: 2026-04-01
 """
+
 from collections.abc import Sequence
 from typing import Union
 
@@ -20,7 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "transactions",
-        sa.Column("transaction_status", sa.String(20), default="pending", nullable=False),
+        sa.Column(
+            "transaction_status", sa.String(20), default="pending", nullable=False
+        ),
     )
     # Index for filtering by status (e.g., get all pending transactions)
     op.create_index(

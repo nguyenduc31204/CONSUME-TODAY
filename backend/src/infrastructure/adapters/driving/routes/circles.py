@@ -55,6 +55,7 @@ auth_dep = Depends(_auth_user_id)
 
 # ── Circle CRUD ─────────────────────────────────────────────────
 
+
 @router.post("/circles", response_model=dict, status_code=201)
 async def create_circle_route(
     data: CreateCircleRequest,
@@ -138,6 +139,7 @@ async def delete_circle_route(
 
 # ── Member Management ─────────────────────────────────────────────
 
+
 @router.post("/circles/{circle_id}/invite", response_model=dict)
 async def invite_member_route(
     circle_id: UUID,
@@ -169,7 +171,9 @@ async def join_circle_route(
     return {
         "success": True,
         "data": {"circle_id": circle_id, "approved": approved},
-        "message": "Bạn đã tham gia nhóm." if approved else "Yêu cầu tham gia đã được gửi.",
+        "message": "Bạn đã tham gia nhóm."
+        if approved
+        else "Yêu cầu tham gia đã được gửi.",
     }
 
 
@@ -248,6 +252,7 @@ async def remove_member_route(
 
 # ── Posts ────────────────────────────────────────────────────────
 
+
 @router.get("/circles/{circle_id}/posts", response_model=dict)
 async def list_posts_route(
     circle_id: UUID,
@@ -277,9 +282,7 @@ async def create_post_route(
     db: AsyncSession = Depends(get_db),
 ):
     """Tạo bài viết trong Circle."""
-    result = await create_post(
-        db=db, circle_id=circle_id, author_id=user_id, data=data
-    )
+    result = await create_post(db=db, circle_id=circle_id, author_id=user_id, data=data)
     if not result:
         raise NotFoundException(message="Circle không tìm thấy.")
     return {
@@ -309,6 +312,7 @@ async def delete_post_route(
 
 # ── Likes ────────────────────────────────────────────────────────
 
+
 @router.post("/circles/{circle_id}/posts/{post_id}/like", response_model=dict)
 async def toggle_like_route(
     circle_id: UUID,
@@ -329,6 +333,7 @@ async def toggle_like_route(
 
 # ── Comments ──────────────────────────────────────────────────────
 
+
 @router.get("/circles/{circle_id}/posts/{post_id}/comments", response_model=dict)
 async def list_comments_route(
     circle_id: UUID,
@@ -345,7 +350,11 @@ async def list_comments_route(
     }
 
 
-@router.post("/circles/{circle_id}/posts/{post_id}/comments", response_model=dict, status_code=201)
+@router.post(
+    "/circles/{circle_id}/posts/{post_id}/comments",
+    response_model=dict,
+    status_code=201,
+)
 async def add_comment_route(
     circle_id: UUID,
     post_id: UUID,
@@ -383,6 +392,7 @@ async def delete_comment_route(
 
 
 # ── Circle Calendar ───────────────────────────────────────────────
+
 
 @router.get("/circles/{circle_id}/posts/calendar", response_model=dict)
 async def circle_calendar_month_route(

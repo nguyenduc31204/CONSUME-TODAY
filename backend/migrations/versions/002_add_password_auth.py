@@ -5,6 +5,7 @@ Revision ID: 002
 Revises: 001
 Create Date: 2026-04-01
 """
+
 from collections.abc import Sequence
 from typing import Union
 
@@ -27,7 +28,13 @@ def upgrade() -> None:
         sa.Column("is_email_verified", sa.Boolean, default=False, nullable=False),
     )
     # Index for fast email lookup during login
-    op.create_index("ix_users_hashed_password", "users", ["hashed_password"], unique=False, postgresql_where=sa.text("hashed_password IS NOT NULL"))
+    op.create_index(
+        "ix_users_hashed_password",
+        "users",
+        ["hashed_password"],
+        unique=False,
+        postgresql_where=sa.text("hashed_password IS NOT NULL"),
+    )
 
 
 def downgrade() -> None:

@@ -15,9 +15,9 @@ class CircleFundTransaction(BaseEntity):
     TYPE_INCOME = "income"
 
     # Split type constants
-    SPLIT_EQUAL = "equal"    # Chia đều cho tất cả thành viên
+    SPLIT_EQUAL = "equal"  # Chia đều cho tất cả thành viên
     SPLIT_SINGLE = "single"  # Chỉ 1 người chịu (ai trả tiền)
-    SPLIT_CUSTOM = "custom"   # Chia tùy ý theo split_amounts
+    SPLIT_CUSTOM = "custom"  # Chia tùy ý theo split_amounts
 
     def __init__(
         self,

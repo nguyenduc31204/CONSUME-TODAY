@@ -19,8 +19,10 @@ class SyncBatchRequest(BaseModel):
     """Request to push a batch of offline operations to the server."""
 
     operations: list[SyncBatchOperationRequest] = Field(
-        ..., min_length=1, max_length=100,
-        description="Batch of operations (max 100 per request)"
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Batch of operations (max 100 per request)",
     )
 
 
@@ -28,6 +30,5 @@ class SyncDeltaRequest(BaseModel):
     """Query params for sync delta."""
 
     since: str | None = Field(
-        None,
-        description="ISO timestamp — return changes since this moment"
+        None, description="ISO timestamp — return changes since this moment"
     )

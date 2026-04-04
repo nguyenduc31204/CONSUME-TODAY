@@ -29,12 +29,14 @@ async def remove_member(
     if circle.is_owner(requester_id):
         if circle.is_owner(target_user_id):
             from src.infrastructure.shared.exceptions import ForbiddenException
+
             raise ForbiddenException(message="Không thể xóa chủ nhóm.")
         await repo.remove_member(circle_id, target_user_id)
         return True
 
     # Thành viên không có quyền xóa người khác
     from src.infrastructure.shared.exceptions import ForbiddenException
+
     raise ForbiddenException(message="Bạn không có quyền xóa thành viên này.")
 
 
@@ -42,4 +44,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

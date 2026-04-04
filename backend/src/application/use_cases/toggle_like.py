@@ -34,10 +34,12 @@ async def toggle_like(
     member = await repo.get_member(post.circle_id, user_id)
     if not member and not circle.is_owner(user_id) and post.author_id != user_id:
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Bạn không có quyền thích bài viết này.")
 
     # Check if already liked
     from src.infrastructure.adapters.driven.database import CircleLikeModel
+
     stmt = select(CircleLikeModel).where(
         CircleLikeModel.post_id == post_id,
         CircleLikeModel.user_id == user_id,
@@ -71,4 +73,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)

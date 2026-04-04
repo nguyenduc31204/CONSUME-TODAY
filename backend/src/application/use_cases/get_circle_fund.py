@@ -27,4 +27,5 @@ def _get_repo(db: AsyncSession) -> CircleFundRepository:
     from src.infrastructure.adapters.driven.circle_fund_repository_impl import (
         CircleFundRepositoryImpl,
     )
+
     return CircleFundRepositoryImpl(db)

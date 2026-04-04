@@ -278,17 +278,17 @@ class TaskModel(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
-    priority: Mapped[str] = mapped_column(
-        String(20), default="medium", nullable=False
-    )
-    status: Mapped[str] = mapped_column(
-        String(20), default="pending", nullable=False
-    )
+    priority: Mapped[str] = mapped_column(String(20), default="medium", nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     related_transaction_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("transactions.id", ondelete="SET NULL"), nullable=True
+        PGUUID(as_uuid=True),
+        ForeignKey("transactions.id", ondelete="SET NULL"),
+        nullable=True,
     )
     related_circle_post_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), ForeignKey("circle_posts.id", ondelete="SET NULL"), nullable=True
+        PGUUID(as_uuid=True),
+        ForeignKey("circle_posts.id", ondelete="SET NULL"),
+        nullable=True,
     )
     reminder_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -324,8 +324,12 @@ class CircleModel(Base):
         nullable=False,
         index=True,
     )
-    visibility: Mapped[str] = mapped_column(String(20), default="members_only", nullable=False)
-    circle_type: Mapped[str] = mapped_column(String(20), default="private", nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(20), default="members_only", nullable=False
+    )
+    circle_type: Mapped[str] = mapped_column(
+        String(20), default="private", nullable=False
+    )
     max_members: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
@@ -380,8 +384,12 @@ class CircleMemberModel(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    circle: Mapped["CircleModel"] = relationship("CircleModel", back_populates="members")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="circle_memberships")
+    circle: Mapped["CircleModel"] = relationship(
+        "CircleModel", back_populates="members"
+    )
+    user: Mapped["UserModel"] = relationship(
+        "UserModel", back_populates="circle_memberships"
+    )
 
 
 class CirclePostModel(Base):
@@ -405,7 +413,9 @@ class CirclePostModel(Base):
     image_url: Mapped[str] = mapped_column(Text, nullable=False)
     caption: Mapped[str | None] = mapped_column(Text, nullable=True)
     ocr_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    is_visible_link: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_visible_link: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     comment_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -449,7 +459,9 @@ class CircleCommentModel(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    post: Mapped["CirclePostModel"] = relationship("CirclePostModel", back_populates="comments")
+    post: Mapped["CirclePostModel"] = relationship(
+        "CirclePostModel", back_populates="comments"
+    )
     author: Mapped["UserModel"] = relationship("UserModel")
 
 
@@ -543,9 +555,7 @@ class CircleFundTransactionModel(Base):
     merchant_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     transaction_date: Mapped[datetime] = mapped_column(Date, nullable=False)
     transaction_time: Mapped[str | None] = mapped_column(Time, nullable=True)
-    split_type: Mapped[str] = mapped_column(
-        String(20), default="equal", nullable=False
-    )
+    split_type: Mapped[str] = mapped_column(String(20), default="equal", nullable=False)
     split_amounts: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     paid_by: Mapped[UUID] = mapped_column(
         PGUUID(as_uuid=True),

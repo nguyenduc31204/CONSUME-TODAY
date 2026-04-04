@@ -39,9 +39,7 @@ class TaskRepositoryImpl(TaskRepository):
             deleted_at=to_naive(model.deleted_at),
         )
 
-    def _to_model(
-        self, entity: Task, model: TaskModel | None = None
-    ) -> TaskModel:
+    def _to_model(self, entity: Task, model: TaskModel | None = None) -> TaskModel:
         if model is None:
             model = TaskModel()
         # Generate UUID in Python — don't rely on DB gen_random_uuid()

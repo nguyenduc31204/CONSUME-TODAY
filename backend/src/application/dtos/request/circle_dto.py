@@ -2,7 +2,6 @@
 Request DTOs — Pydantic models for Circle API requests.
 """
 
-
 from pydantic import BaseModel, Field
 
 

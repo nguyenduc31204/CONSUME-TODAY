@@ -1,6 +1,7 @@
 """
 Unit tests for Money value object.
 """
+
 import pytest
 
 from src.domain.value_objects.money import Money

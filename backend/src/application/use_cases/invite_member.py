@@ -26,6 +26,7 @@ async def invite_member(
 
     if not circle.is_owner(user_id):
         from src.infrastructure.shared.exceptions import ForbiddenException
+
         raise ForbiddenException(message="Chỉ chủ nhóm mới có thể mời thành viên.")
 
     # Invite code = last 6 chars of UUID (uppercase)
@@ -41,4 +42,5 @@ def _get_repo(db: AsyncSession) -> CircleRepository:
     from src.infrastructure.adapters.driven.circle_repository_impl import (
         CircleRepositoryImpl,
     )
+
     return CircleRepositoryImpl(db)
