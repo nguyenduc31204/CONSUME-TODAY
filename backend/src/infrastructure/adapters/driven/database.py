@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
 
 from src.config import get_settings
 
@@ -39,6 +40,27 @@ class Base(DeclarativeBase):
     """SQLAlchemy declarative base — all ORM models inherit from this."""
 
     pass
+
+
+# ── Custom Types ──────────────────────────────────────────────
+
+
+class TimeAsString(TypeDecorator):
+    """
+    PostgreSQL TIME column that returns "HH:MM:SS" string in Python
+    instead of datetime.time — avoids psycopg2 "can't adapt type datetime.time" errors.
+
+    Persists as native PostgreSQL TIME; reads back as "HH:MM" string.
+    """
+
+    impl = Time
+    cache_ok = True
+
+    def process_result_value(self, value, dialect) -> str | None:
+        """Convert DB TIME → Python string "HH:MM"."""
+        if value is None:
+            return None
+        return value.strftime("%H:%M")
 
 
 # ── ORM Models (Infrastructure persistence models) ────────────
@@ -194,7 +216,7 @@ class TransactionModel(Base):
     transaction_date: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, index=True
     )
-    transaction_time: Mapped[datetime | None] = mapped_column(Time, nullable=True)
+    transaction_time: Mapped[str | None] = mapped_column(TimeAsString, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_manual: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ocr_confidence: Mapped[float] = mapped_column(default=0.0)
@@ -554,7 +576,7 @@ class CircleFundTransactionModel(Base):
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     merchant_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     transaction_date: Mapped[datetime] = mapped_column(Date, nullable=False)
-    transaction_time: Mapped[str | None] = mapped_column(Time, nullable=True)
+    transaction_time: Mapped[str | None] = mapped_column(TimeAsString, nullable=True)
     split_type: Mapped[str] = mapped_column(String(20), default="equal", nullable=False)
     split_amounts: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     paid_by: Mapped[UUID] = mapped_column(

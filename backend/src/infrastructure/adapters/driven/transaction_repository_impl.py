@@ -34,9 +34,7 @@ class TransactionRepositoryImpl(TransactionRepository):
             amount=model.amount,
             currency=model.currency,
             transaction_date=model.transaction_date,
-            transaction_time=model.transaction_time.strftime("%H:%M")
-            if model.transaction_time
-            else None,
+            transaction_time=model.transaction_time,
             note=model.note,
             ocr_confidence=model.ocr_confidence,
             is_life_log=model.is_life_log,
