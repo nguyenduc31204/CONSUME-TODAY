@@ -4,6 +4,9 @@ import Home from '@/pages/Home'
 import Journal from '@/pages/Journal'
 import Reports from '@/pages/Reports'
 import Profile from '@/pages/Profile'
+import CirclesPage from '@/pages/CirclesPage'
+import CircleDetailPage from '@/pages/CircleDetailPage'
+import JoinByCodePage from '@/pages/JoinByCodePage'
 import EditProfile from '@/pages/EditProfile'
 import WalletManagement from '@/pages/WalletManagement'
 import CategoryManagement from '@/pages/CategoryManagement'
@@ -43,6 +46,16 @@ export default function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/circles" element={<CirclesPage />} />
+          <Route path="/circles/join/:inviteCode" element={<JoinByCodePage />} />
+          <Route
+            path="/circles/:id"
+            element={
+              <RequireAuth>
+                <CircleDetailPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/profile"
             element={

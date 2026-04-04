@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.domain.entities.image import Image
 from src.domain.repositories.image_repository import ImageRepository
 from src.infrastructure.adapters.driven.database import ImageModel
+from src.infrastructure.shared.datetime_utils import to_naive, utc_now
 
 
 class ImageRepositoryImpl(ImageRepository):
@@ -32,9 +33,9 @@ class ImageRepositoryImpl(ImageRepository):
             width=model.width,
             height=model.height,
             storage_key=model.storage_key,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-            deleted_at=model.deleted_at,
+            created_at=to_naive(model.created_at),
+            updated_at=to_naive(model.updated_at),
+            deleted_at=to_naive(model.deleted_at),
         )
 
     def _to_model(self, entity: Image, model: ImageModel | None = None) -> ImageModel:
@@ -50,9 +51,9 @@ class ImageRepositoryImpl(ImageRepository):
         model.width = entity.width
         model.height = entity.height
         model.storage_key = entity.storage_key
-        model.created_at = entity.created_at
-        model.updated_at = entity.updated_at
-        model.deleted_at = entity.deleted_at
+        model.created_at = to_naive(entity.created_at)
+        model.updated_at = to_naive(entity.updated_at)
+        model.deleted_at = to_naive(entity.deleted_at)
         return model
 
     async def save(self, image: Image) -> Image:
@@ -75,7 +76,7 @@ class ImageRepositoryImpl(ImageRepository):
         stmt = (
             update(ImageModel)
             .where(ImageModel.id == image_id)
-            .values(deleted_at=datetime.utcnow(), updated_at=datetime.utcnow())
+            .values(deleted_at=utc_now(), updated_at=utc_now())
         )
         await self._session.execute(stmt)
         await self._session.flush()

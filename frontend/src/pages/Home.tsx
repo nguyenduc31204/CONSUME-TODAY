@@ -1,13 +1,15 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Camera, ChevronRight } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Camera, ChevronRight, Plus } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { transactionsApi } from '@/api/transactions'
 import { todayISO } from '@/utils/formatters'
 import { formatVND } from '@/utils/formatters'
 import { HomeCard } from '@/components/common/HomeCard'
 import { HomeCardSkeleton, StatsSkeleton } from '@/components/ui/Skeleton'
-import type { Transaction } from '@/types/transaction'
+import { AddTransactionSheet } from '@/components/transactions/AddTransactionSheet'
+import type { Transaction, TransactionCreateData } from '@/types/transaction'
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -127,9 +129,10 @@ function PhotoSection({
 export default function Home() {
   const user = useAuthStore((s) => s.user)
   const firstName = user?.name?.split(' ')[0] ?? ''
-
   const today = todayISO()
   const accessToken = useAuthStore((s) => s.accessToken)
+  const queryClient = useQueryClient()
+  const [showAddTransaction, setShowAddTransaction] = useState(false)
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['transactions', 'today'],
@@ -150,6 +153,15 @@ export default function Home() {
 
   const transactions: Transaction[] = data?.items ?? []
   console.log('Today transactions:', transactions)
+
+  // ── Mutation for manual transaction ────────────────────────
+  const createMutation = useMutation({
+    mutationFn: (data: TransactionCreateData) => transactionsApi.createManual(data),
+    onSuccess: () => {
+      setShowAddTransaction(false)
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
 
   return (
     <div className="min-h-screen bg-cream">
@@ -178,14 +190,25 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Camera FAB — triggers upload */}
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('memoir:focus-camera'))}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg shadow-black/20 transition-transform active:scale-95 hover:scale-105"
-            aria-label="Chụp ảnh"
-          >
-            <Camera className="h-5 w-5 text-memoir-600" />
-          </button>
+          {/* Actions row */}
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => setShowAddTransaction(true)}
+              className="flex items-center gap-1 rounded-full bg-white/20 hover:bg-white/30 px-3 py-2 text-xs font-semibold text-white transition-colors"
+              aria-label="Thêm nhanh"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm nhanh
+            </button>
+            {/* Camera FAB — triggers upload */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('memoir:focus-camera'))}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg shadow-black/20 transition-transform active:scale-95 hover:scale-105"
+              aria-label="Chụp ảnh"
+            >
+              <Camera className="h-5 w-5 text-memoir-600" />
+            </button>
+          </div>
         </div>
 
         {/* Date label */}
@@ -256,8 +279,17 @@ export default function Home() {
             viewAllHref="/journal"
           />
         )}
-
       </div>
+
+      {/* Manual transaction sheet */}
+      {showAddTransaction && (
+        <AddTransactionSheet
+          onClose={() => setShowAddTransaction(false)}
+          onSubmit={(data) => createMutation.mutate(data)}
+          isLoading={createMutation.isPending}
+          defaultDate={today}
+        />
+      )}
     </div>
   )
 }

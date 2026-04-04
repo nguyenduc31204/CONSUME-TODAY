@@ -27,6 +27,8 @@ cat ./deploy_key.pub  # paste vào server: ~/.ssh/authorized_keys
 cat ./deploy_key
 ```
 
+sed -i '30a\    image: docker.io/ducnguyen31/memoir-backend:latest' /opt/CONSUME-TODAY/docker-compose.prod.yml
+
 **Cách lấy `authorized_keys` trên server:**
 ```bash
 # SSH vào server

@@ -82,10 +82,18 @@ export class ApiClient {
   }
 
   async get<T>(path: string, params?: Record<string, string | number>): Promise<ApiResponse<T>> {
-    const searchParams = params
-      ? '?' + new URLSearchParams(params as Record<string, string>).toString()
-      : ''
-    return this.request<T>('GET', path + searchParams)
+    if (params) {
+      // Strip undefined / null values so they don't become "undefined" in query string
+      const clean: Record<string, string> = {}
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null && v !== '') {
+          clean[k] = String(v)
+        }
+      }
+      const qs = Object.keys(clean).length > 0 ? '?' + new URLSearchParams(clean).toString() : ''
+      return this.request<T>('GET', path + qs)
+    }
+    return this.request<T>('GET', path)
   }
 
   async post<T>(path: string, body?: unknown): Promise<ApiResponse<T>> {

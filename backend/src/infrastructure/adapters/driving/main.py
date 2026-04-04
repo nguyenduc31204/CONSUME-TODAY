@@ -165,10 +165,14 @@ from src.infrastructure.adapters.driving.auth.routes import (
     router as auth_router,  # noqa: E402
 )
 from src.infrastructure.adapters.driving.routes import (  # noqa: E402
+    calendar,
     categories,
+    circles,
     images,
     ocr,
     reports,
+    sync,
+    tasks,
     transactions,
     users,
     wallets,
@@ -222,6 +226,30 @@ app.include_router(
     auth_router,
     prefix=api_prefix,
     tags=["Auth"],
+)
+
+app.include_router(
+    sync.router,
+    prefix=api_prefix,
+    tags=["Sync"],
+)
+
+app.include_router(
+    calendar.router,
+    prefix=api_prefix,
+    tags=["Calendar"],
+)
+
+app.include_router(
+    tasks.router,
+    prefix=api_prefix,
+    tags=["Tasks"],
+)
+
+app.include_router(
+    circles.router,
+    prefix=api_prefix,
+    tags=["Circles"],
 )
 
 

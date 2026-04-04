@@ -33,6 +33,7 @@ class TransactionRepository(ABC):
         category_id: UUID | None = None,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        updated_since: datetime | None = None,
         skip: int = 0,
         limit: int = 50,
     ) -> tuple[list[Transaction], int]:

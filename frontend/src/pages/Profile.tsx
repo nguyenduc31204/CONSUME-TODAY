@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import {
   Settings, CreditCard, Tag, LogOut, ChevronRight,
-  Receipt, Image, Pencil,
+  Receipt, Image, Pencil, Users,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useAuth } from '@/hooks/useAuth'
@@ -175,6 +175,29 @@ export default function Profile() {
             </>
           )}
         </div>
+      </div>
+
+      {/* ── Circles shortcut ─────────────────────────── */}
+      <div className="mb-6">
+        <h3 className="mb-3 text-sm font-semibold text-gray-700">Nhóm kỷ niệm</h3>
+        <button
+          onClick={() => navigate('/circles')}
+          className={cn(
+            'w-full flex items-center gap-4 rounded-2xl bg-white px-5 py-4',
+            'shadow-sm border border-gray-100',
+            'text-left transition-all hover:shadow-md hover:border-memoir-200',
+            'focus:outline-none focus:ring-2 focus:ring-memoir-500',
+          )}
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-memoir-50">
+            <Users className="h-5 w-5 text-memoir-500" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-gray-900">Nhóm kỷ niệm</p>
+            <p className="text-xs text-gray-500">Chia sẻ khoảnh khắc với gia đình & bạn bè</p>
+          </div>
+          <ChevronRight className="h-5 w-5 text-gray-300" />
+        </button>
       </div>
 
       {/* ── Menu Items ─────────────────────────────────── */}

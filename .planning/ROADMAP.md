@@ -144,6 +144,86 @@ Plans:
 
 ---
 
+### Phase 7: Offline-first — Local Cache + Write Queue
+**Goal**: Xem feed/transactions/Circles offline. Ghi local queue khi offline, sync khi online.
+**Depends on**: Phase 6
+**Plan**: `docs/PHASE-07-offline.md`
+
+**Success Criteria:**
+  1. Xem feed/transactions khi offline — hiển thị cached data
+  2. Tạo transaction khi offline → queue persists in IndexedDB
+  3. Reconnect → queue sync FIFO, mark isSynced=true
+  4. Conflict → last-write-wins, notification "Sync conflict — changes merged"
+
+---
+
+### Phase 8: Timeline Calendar — Memories on Calendar
+**Goal**: Hiển thị kỷ niệm trên lịch/tháng. Xem ngày nào có bao nhiêu kỷ niệm.
+**Depends on**: Phase 7
+**Plan**: `docs/PHASE-08-calendar.md`
+
+**Success Criteria:**
+  1. Calendar grid hiển thị tháng với dot indicators (size theo số lượng)
+  2. Tap ngày → bottom sheet chi tiết transactions trong ngày
+  3. Swipe trái/phải → chuyển tháng, fetch data mới
+  4. Xem offline → hiển thị cached calendar data
+
+---
+
+### Phase 9: Todo/Task — Personal Task Management
+**Goal**: Danh sách công việc cá nhân gắn ngày/ảnh. Task có thể gắn kỷ niệm liên quan.
+**Depends on**: Phase 8
+**Plan**: `docs/PHASE-09-tasks.md`
+
+**Success Criteria:**
+  1. Tạo task mới (title, due date, priority, gắn transaction)
+  2. Đánh dấu hoàn thành → checkbox, strikethrough
+  3. Filter theo status (Hôm nay / Sắp tới / Hoàn thành)
+  4. Gắn transaction vào task → hiển thị transaction info trong card
+
+---
+
+### Phase 10: Timeline Kỷ niệm — Memory Stream
+**Goal**: Dòng thời gian kỷ niệm: "Hôm nay", "Tuần này", "Tháng này", "Năm trước".
+**Depends on**: Phase 9
+**Plan**: `docs/PHASE-10-memories.md`
+
+**Success Criteria:**
+  1. 4 sections: Hôm nay / Tuần này / Tháng này / Năm trước
+  2. "Năm trước" → special highlight animation
+  3. AI memory suggestions (ngày này năm ngoái, sinh nhật, kỷ niệm)
+  4. Xem offline → hiển thị cached memory data
+
+---
+
+### Phase 11: Lifetime License — VNPay/MoMo Payment
+**Goal**: Bán Lifetime License qua VNPay/MoMo. Unlock tất cả tính năng.
+**Depends on**: Phase 10
+**Plan**: `docs/PHASE-11-payment.md`
+
+**Success Criteria:**
+  1. Tạo Circle thứ 4 → hiển thị PremiumUpsell với giá 199k-299k
+  2. Click "Thanh toán VNPay/MoMo" → redirect sang gateway
+  3. IPN callback verify → user.has_lifetime_license = true
+  4. Sau thanh toán → unlock all features, Profile badge "Lifetime"
+
+---
+
+### Phase 12: Integration + Polish
+**Goal**: Tích hợp tất cả phase, E2E tests, performance, polish cuối cùng.
+**Depends on**: Phase 11
+**Plan**: TBD (planned during Phase 11)
+
+**Success Criteria:**
+  1. Offline E2E: tạo transaction offline → reconnect → sync thành công
+  2. Payment E2E: mua license → activated → unlock features
+  3. Calendar: lazy load months, smooth scroll
+  4. Memory timeline: infinite scroll với virtualization (react-window)
+  5. Accessibility: ARIA labels, keyboard navigation, dark mode
+  6. Empty states + loading skeletons cho tất cả views
+
+---
+
 ## Progress
 
 **Execution Order:**

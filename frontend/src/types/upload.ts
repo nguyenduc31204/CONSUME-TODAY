@@ -48,10 +48,12 @@ export interface TransactionForEdit {
   amount: number
   currency: string
   transaction_date: string | null
+  transaction_time: string | null
   note: string | null
   ocr_confidence: number
   is_life_log: boolean
   is_income: boolean
+  is_manual: boolean
   transaction_status: string
   created_at: string
   updated_at: string

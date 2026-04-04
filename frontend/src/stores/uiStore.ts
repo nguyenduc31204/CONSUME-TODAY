@@ -7,7 +7,7 @@ export interface Toast {
   duration?: number
 }
 
-interface UiState {
+export interface UiState {
   isLoading: boolean
   toasts: Toast[]
   isBottomSheetOpen: boolean
