@@ -10,6 +10,7 @@ from typing import Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import JSONB
 
 # revision identifiers
 revision: str = "012"
@@ -89,7 +90,7 @@ def upgrade() -> None:
         # 'equal'  = chia đều cho tất cả thành viên
         # 'single' = chỉ 1 người chịu (ai trả tiền)
         # 'custom' = chia tùy ý theo split_amounts
-        sa.Column("split_amounts", sa.JSONB(), nullable=True),
+        sa.Column("split_amounts", JSONB(), nullable=True),
         # {"user_id1": 50000, "user_id2": 30000}
         sa.Column("paid_by", sa.UUID(), nullable=False),
         sa.Column(
