@@ -143,7 +143,7 @@ export function TasksContent() {
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
 
-  const tasks = data?.items ?? []
+  const tasks = useMemo(() => data?.items ?? [], [data?.items])
 
   // ── Group tasks ───────────────────────────────────────────
   const today = new Date().toDateString()
@@ -172,7 +172,7 @@ export function TasksContent() {
       default:
         return active.filter((t) => t.status !== 'completed')
     }
-  }, [tasks, filterTab])
+  }, [tasks, filterTab, today])
 
   // Count badges for each tab
   const tabCounts = useMemo(() => {
@@ -188,7 +188,7 @@ export function TasksContent() {
       overdue: overdueCount,
       completed: done.length,
     }
-  }, [tasks])
+  }, [tasks, today])
 
   // ── Handlers ───────────────────────────────────────────────
 

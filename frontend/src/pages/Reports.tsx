@@ -115,7 +115,7 @@ function SkeletonChart() {
 // ── Reports Page ─────────────────────────────────────────────────
 
 export default function Reports() {
-  const [period, _setPeriod] = useState<ReportPeriod>('week')
+  const [period] = useState<ReportPeriod>('week')
   const [subTab, setSubTab] = useState<SubTab>('reports')
   const accessToken = useAuthStore((s) => s.accessToken)
 

@@ -11,7 +11,6 @@ import {
   incrementRetry,
   popPendingOperations,
   removeOperation,
-  setLastSyncedAt as _setLastSyncedAt,
   upsertCircle,
   upsertCirclePost,
   upsertTransaction,
@@ -150,7 +149,7 @@ function dtoToLocalCircle(dto: {
  * - Syncs delta when coming online
  */
 export function useSync() {
-  const { isOnline: _isOnline, setSyncing, setLastSyncedAt, setLastSyncError, setPendingCount } =
+  const { setSyncing, setLastSyncedAt, setLastSyncError, setPendingCount } =
     useSyncStore()
   const { addToast } = useUiStore()
   const queryClient = useQueryClient()

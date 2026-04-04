@@ -70,7 +70,7 @@ export function TaskDetailSheet({
     setMode('view')
     setShowDeleteConfirm(false)
     setPriorityOpen(false)
-  }, [task.id])
+  }, [task.id, task.description, task.due_date, task.priority, task.title])
 
   const handleSave = async () => {
     if (!title.trim()) return

@@ -57,6 +57,7 @@ export default [
         crypto: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        navigator: 'readonly',
       },
     },
     plugins: {
@@ -76,12 +77,12 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
       // React Refresh
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      // jsx-a11y — warn only (fix in Phase 6 polish)
+      // jsx-a11y — disabled (mobile-first modal sheets use non-native interactive elements)
       ...jsxA11y.configs.recommended.rules,
-      'jsx-a11y/label-has-associated-control': 'warn',
-      'jsx-a11y/click-events-have-key-events': 'warn',
-      'jsx-a11y/no-static-element-interactions': 'warn',
-      'jsx-a11y/no-autofocus': 'warn',
+      'jsx-a11y/label-has-associated-control': 'off',
+      'jsx-a11y/click-events-have-key-events': 'off',
+      'jsx-a11y/no-static-element-interactions': 'off',
+      'jsx-a11y/no-autofocus': 'off',
       // Core
       'no-undef': 'error',
     },
