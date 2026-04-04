@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     try:
         async with engine.begin() as conn:
             # Only create if tables don't exist (Alembic owns schema in production)
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(Base.metadata.create_all, checkfirst=True)
         logger.info("Database tables checked/created.")
     except Exception as e:
         logger.warning(f"DB table creation skipped (Alembic manages schema): {e}")
