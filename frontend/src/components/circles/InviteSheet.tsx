@@ -16,7 +16,7 @@ export function InviteSheet({ inviteCode, shareUrl, onClose }: InviteSheetProps)
 
   const handleCopy = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await window.navigator.clipboard.writeText(text)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {

@@ -54,7 +54,7 @@ interface SyncState {
 export const useSyncStore = create<SyncState>()(
   persist(
     (set) => ({
-      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      isOnline: typeof window !== 'undefined' ? window.navigator.onLine : true,
       isSyncing: false,
       lastSyncedAt: null,
       pendingCount: 0,
