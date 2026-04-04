@@ -3,7 +3,8 @@ TransactionRepositoryImpl — SQLAlchemy async implementation of TransactionRepo
 Driven adapter: persistence.
 """
 
-from datetime import datetime, time as time_type
+from datetime import datetime
+from datetime import time as time_type
 from uuid import UUID
 
 from sqlalchemy import and_, func, select, update

@@ -2,7 +2,7 @@
 CircleMember Entity — Represents membership of a user in a Circle.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from src.domain.entities.base import BaseEntity
@@ -40,4 +40,4 @@ class CircleMember(BaseEntity):
         self.user_id = user_id
         self.role = role
         self.status = status
-        self.joined_at = joined_at if joined_at is not None else datetime.now(timezone.utc)
+        self.joined_at = joined_at if joined_at is not None else datetime.now(UTC)

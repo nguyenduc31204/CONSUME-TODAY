@@ -50,5 +50,7 @@ async def get_task(
 
 
 def _get_repo(db: AsyncSession) -> TaskRepository:
-    from src.infrastructure.adapters.driven.task_repository_impl import TaskRepositoryImpl
+    from src.infrastructure.adapters.driven.task_repository_impl import (
+        TaskRepositoryImpl,
+    )
     return TaskRepositoryImpl(db)

@@ -3,7 +3,6 @@ CircleFundRepository — Abstract interface for CircleFund persistence.
 """
 
 from abc import ABC, abstractmethod
-from datetime import date
 from uuid import UUID
 
 from src.domain.entities.circle_fund import CircleFund

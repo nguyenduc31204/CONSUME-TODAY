@@ -4,9 +4,8 @@ JoinCircleUseCase — Tham gia Circle qua invite code.
 
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.repositories.circle_repository import CircleRepository
 
@@ -82,5 +81,7 @@ async def join_circle(
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
-    from src.infrastructure.adapters.driven.circle_repository_impl import CircleRepositoryImpl
+    from src.infrastructure.adapters.driven.circle_repository_impl import (
+        CircleRepositoryImpl,
+    )
     return CircleRepositoryImpl(db)

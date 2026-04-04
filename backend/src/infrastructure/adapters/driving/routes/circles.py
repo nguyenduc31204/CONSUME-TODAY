@@ -3,13 +3,10 @@ Circle Routes — Social memory sharing (Circles).
 Covers: Circle CRUD, member management, posts, comments, likes.
 """
 
+from datetime import date
 from uuid import UUID
 
-from datetime import date
-
-from fastapi import APIRouter, Depends, Header, Path, Query
-
-from src.application.dtos.response.circle_calendar_dto import CircleCalendarMonthResponse
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.dtos.request.circle_dto import (
@@ -19,7 +16,11 @@ from src.application.dtos.request.circle_dto import (
     CreatePostRequest,
     UpdateCircleRequest,
 )
+from src.application.dtos.response.circle_calendar_dto import (
+    CircleCalendarMonthResponse,
+)
 from src.application.use_cases.add_comment import add_comment
+from src.application.use_cases.approve_join_request import approve_join_request
 from src.application.use_cases.circle_calendar_month import get_circle_calendar_month
 from src.application.use_cases.create_circle import create_circle
 from src.application.use_cases.create_post import create_post
@@ -29,25 +30,25 @@ from src.application.use_cases.delete_post import delete_post
 from src.application.use_cases.get_circle import get_circle
 from src.application.use_cases.invite_member import invite_member
 from src.application.use_cases.join_circle import join_circle
-from src.application.use_cases.approve_join_request import approve_join_request
-from src.application.use_cases.reject_join_request import reject_join_request
 from src.application.use_cases.leave_circle import leave_circle
-from src.application.use_cases.list_comments import list_comments
 from src.application.use_cases.list_circles import list_circles
+from src.application.use_cases.list_comments import list_comments
 from src.application.use_cases.list_posts import list_posts
+from src.application.use_cases.reject_join_request import reject_join_request
 from src.application.use_cases.remove_member import remove_member
 from src.application.use_cases.toggle_like import toggle_like
 from src.application.use_cases.update_circle import update_circle
-from src.infrastructure.adapters.driving.routes.calendar import _get_user_id
 from src.infrastructure.adapters.driven.database import get_db
-from src.infrastructure.shared.exceptions import ForbiddenException, NotFoundException
+from src.infrastructure.shared.exceptions import NotFoundException
 
 router = APIRouter()
 
 
 # ── Auth helper (reuse from calendar) ────────────────────────────
 # Already defined in calendar.py, import here
-from src.infrastructure.adapters.driving.routes.calendar import _get_user_id as _auth_user_id
+from src.infrastructure.adapters.driving.routes.calendar import (
+    _get_user_id as _auth_user_id,
+)
 
 auth_dep = Depends(_auth_user_id)
 
@@ -420,9 +421,11 @@ async def circle_calendar_day_route(
     db: AsyncSession = Depends(get_db),
 ):
     """Chi tiết kỷ niệm trong 1 ngày của Circle."""
-    from src.application.use_cases.get_circle import get_circle as _get_circle
+    from src.application.dtos.response.circle_calendar_dto import (
+        CircleCalendarDayResponse,
+    )
     from src.application.use_cases.circle_calendar_day import get_circle_calendar_day
-    from src.application.dtos.response.circle_calendar_dto import CircleCalendarDayResponse
+    from src.application.use_cases.get_circle import get_circle as _get_circle
 
     circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
     if not circle:
@@ -453,9 +456,9 @@ async def get_circle_fund_route(
     Get the shared fund for a circle.
     Only approved members and owner can view.
     """
+    from src.application.dtos.response.circle_dto import CircleFundResponse
     from src.application.use_cases.get_circle import get_circle as _get_circle
     from src.application.use_cases.get_circle_fund import init_circle_fund
-    from src.application.dtos.response.circle_dto import CircleFundResponse
 
     circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
     if not circle:
@@ -493,7 +496,9 @@ async def list_circle_fund_transactions_route(
     List fund transactions for a circle with optional filters.
     """
     from src.application.use_cases.get_circle import get_circle as _get_circle
-    from src.application.use_cases.list_circle_fund_transactions import list_circle_fund_transactions
+    from src.application.use_cases.list_circle_fund_transactions import (
+        list_circle_fund_transactions,
+    )
 
     circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
     if not circle:
@@ -525,8 +530,10 @@ async def add_circle_fund_transaction_route(
     Add an income or expense transaction to the circle's shared fund.
     Only approved members and owner can add transactions.
     """
+    from src.application.use_cases.add_circle_fund_transaction import (
+        add_circle_fund_transaction,
+    )
     from src.application.use_cases.get_circle import get_circle as _get_circle
-    from src.application.use_cases.add_circle_fund_transaction import add_circle_fund_transaction
 
     circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
     if not circle:
@@ -556,8 +563,10 @@ async def delete_circle_fund_transaction_route(
     Delete (soft-delete) a fund transaction.
     Only the author or circle owner can delete.
     """
+    from src.application.use_cases.delete_circle_fund_transaction import (
+        delete_circle_fund_transaction,
+    )
     from src.application.use_cases.get_circle import get_circle as _get_circle
-    from src.application.use_cases.delete_circle_fund_transaction import delete_circle_fund_transaction
 
     circle = await _get_circle(db=db, circle_id=circle_id, user_id=user_id)
     if not circle:

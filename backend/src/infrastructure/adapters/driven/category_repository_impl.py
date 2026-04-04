@@ -3,7 +3,6 @@ CategoryRepositoryImpl — SQLAlchemy async implementation of CategoryRepository
 Driven adapter: persistence.
 """
 
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select, update

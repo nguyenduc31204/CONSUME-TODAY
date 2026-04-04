@@ -6,13 +6,12 @@ All entities store timezone-aware UTC datetimes for correct JSON serialization.
 This module provides helpers to convert between the two.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 def utc_now() -> datetime:
     """Return current UTC time as naive datetime for DB storage."""
-    from datetime import timezone
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def to_naive(dt: datetime | None) -> datetime | None:

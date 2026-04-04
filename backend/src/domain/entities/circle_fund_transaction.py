@@ -2,8 +2,7 @@
 CircleFundTransaction Entity — An income or expense entry within a Circle's shared fund.
 """
 
-from datetime import datetime, date
-from typing import Any
+from datetime import date, datetime
 from uuid import UUID
 
 from src.domain.entities.base import BaseEntity

@@ -2,7 +2,7 @@
 Task Entity — Personal task management linked to transactions/circles.
 """
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from uuid import UUID
 
 from src.domain.entities.base import BaseEntity
@@ -73,7 +73,7 @@ class Task(BaseEntity):
         if self.status == self.STATUS_CANCELLED:
             raise ValueError("Cannot complete a cancelled task.")
         self.status = self.STATUS_COMPLETED
-        self.completed_at = datetime.now(timezone.utc)
+        self.completed_at = datetime.now(UTC)
 
     def uncomplete(self) -> None:
         """Reopen a completed task."""

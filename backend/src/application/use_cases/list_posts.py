@@ -92,5 +92,7 @@ async def _is_liked(db: AsyncSession, circle_id: UUID, post_id: UUID, user_id: U
 
 
 def _get_repo(db: AsyncSession) -> CircleRepository:
-    from src.infrastructure.adapters.driven.circle_repository_impl import CircleRepositoryImpl
+    from src.infrastructure.adapters.driven.circle_repository_impl import (
+        CircleRepositoryImpl,
+    )
     return CircleRepositoryImpl(db)

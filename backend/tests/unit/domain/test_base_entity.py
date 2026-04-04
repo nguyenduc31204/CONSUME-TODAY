@@ -2,7 +2,6 @@
 Unit tests for BaseEntity.
 Tests domain logic without any framework dependencies.
 """
-import pytest
 from datetime import datetime
 from uuid import uuid4
 

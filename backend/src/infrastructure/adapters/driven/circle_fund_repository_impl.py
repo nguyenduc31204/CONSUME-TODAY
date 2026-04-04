@@ -5,7 +5,7 @@ CircleFundRepositoryImpl — SQLAlchemy async implementation of CircleFundReposi
 from datetime import date as date_type
 from uuid import UUID
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.entities.circle_fund import CircleFund
@@ -127,7 +127,10 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         self, txn: CircleFundTransaction
     ) -> CircleFundTransaction:
         from datetime import time as time_type
-        from src.infrastructure.adapters.driven.database import CircleFundTransactionModel
+
+        from src.infrastructure.adapters.driven.database import (
+            CircleFundTransactionModel,
+        )
 
         # Parse "HH:MM" or "HH:MM:SS" string → datetime.time for DB TIME column
         db_time = None
@@ -177,7 +180,10 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         limit: int = 50,
     ) -> tuple[list[CircleFundTransaction], int]:
         from datetime import date as date_type
-        from src.infrastructure.adapters.driven.database import CircleFundTransactionModel
+
+        from src.infrastructure.adapters.driven.database import (
+            CircleFundTransactionModel,
+        )
         conditions = [
             CircleFundTransactionModel.fund_id == fund_id,
             CircleFundTransactionModel.deleted_at.is_(None),
@@ -221,7 +227,9 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         return items, total
 
     async def get_fund_transaction(self, txn_id: UUID) -> CircleFundTransaction | None:
-        from src.infrastructure.adapters.driven.database import CircleFundTransactionModel
+        from src.infrastructure.adapters.driven.database import (
+            CircleFundTransactionModel,
+        )
         stmt = select(CircleFundTransactionModel).where(
             CircleFundTransactionModel.id == txn_id,
             CircleFundTransactionModel.deleted_at.is_(None),
@@ -231,7 +239,9 @@ class CircleFundRepositoryImpl(CircleFundRepository):
         return _map_txn(model) if model else None
 
     async def delete_fund_transaction(self, txn_id: UUID) -> None:
-        from src.infrastructure.adapters.driven.database import CircleFundTransactionModel
+        from src.infrastructure.adapters.driven.database import (
+            CircleFundTransactionModel,
+        )
         stmt = (
             update(CircleFundTransactionModel)
             .where(CircleFundTransactionModel.id == txn_id)
