@@ -47,13 +47,13 @@ export const useAuthStore = create<AuthState>()(
       tokenExpiresAt: null,
       _logoutInProgress: false,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => set({ user, isAuthenticated: !!user, _logoutInProgress: false }),
 
       setAccessToken: (token) => {
         if (token) {
           _setCookie(token)
           const expiresAt = _getTokenExpiry(token)
-          set({ accessToken: token, tokenExpiresAt: expiresAt, isAuthenticated: true })
+          set({ accessToken: token, tokenExpiresAt: expiresAt, isAuthenticated: true, _logoutInProgress: false })
         } else {
           _clearCookie()
           set({ accessToken: null, tokenExpiresAt: null, isAuthenticated: false })
