@@ -30,14 +30,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Environment: {settings.app_env}")
     logger.info(f"Database: {settings.db_host}:{settings.db_port}/{settings.db_name}")
 
-    # Startup: create DB tables (Alembic handles production migrations)
-    try:
-        async with engine.begin() as conn:
-            # Only create if tables don't exist (Alembic owns schema in production)
-            await conn.run_sync(Base.metadata.create_all, checkfirst=True)
-        logger.info("Database tables checked/created.")
-    except Exception as e:
-        logger.warning(f"DB table creation skipped (Alembic manages schema): {e}")
+    # Only create tables in development (Alembic manages schema in production)
+    if settings.app_env != "production":
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database tables checked/created.")
+        except Exception as e:
+            logger.warning(f"DB table creation skipped: {e}")
 
     logger.info("MemoirFinance API ready ✨")
     yield
